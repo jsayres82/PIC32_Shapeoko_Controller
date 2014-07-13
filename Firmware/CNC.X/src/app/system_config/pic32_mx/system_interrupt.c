@@ -59,7 +59,12 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #include "bsp_config.h"
 
 char uart_rd = 0;
-volatile block_t *current_block = NULL;  // A pointer to the block currently being traced
+volatile block_t *current_block = Null;  // A pointer to the block currently being traced
+uint8_t timer2ActiveAxis;
+uint8_t timer3ActiveAxis;
+uint8_t timer4ActiveAxis;
+uint32_t timerSteps[N_AXIS];
+bool blockMoveActive = FALSE;
 // *****************************************************************************
 // *****************************************************************************
 // Section: System Interrupt Vector Functions
@@ -113,271 +118,194 @@ void __ISR(_EXTERNAL_2_VECTOR, ipl1) _Interrupt_XY_Limit(void)
 
 void __ISR(_TIMER_4_VECTOR, ipl2) _InterruptHandler_TMR4(void)
 {
-   // if(current_block->direction_bits[Z_AXIS])
-    //   PORTSetBits(zAxis.directionPin.port, zAxis.directionPin.pin);
-   // else
-     //  PORTClearBits(zAxis.directionPin.port, zAxis.directionPin.pin);
-    if(steps_Z)
+    if(!blockMoveActive)           // If we are Homing
     {
-        if(!(mPORTAReadBits(zAxis.enablePin.pin)))
+        if(!(mPORTAReadBits(zAxis.enablePin.pin)) && (steps_Z))
+        {
             steps_Z--;
-    }
-    if (current_block != Null)
-    {
-        if (current_block->steps_z)
-        {
-            if(!(mPORTAReadBits(zAxis.enablePin.pin)))
-                current_block->steps_z--;
         }
-       else
+        else
         {
-            //CloseOC2();
             BSP_AxisDisable(Z_AXIS);
             BSP_Timer4Stop();
         }
     }
     else
     {
-       BSP_AxisDisable(Z_AXIS);
+        if (current_block->steps[current_block->axisTimerOrder[TIMER4]])
+        {
+                timerSteps[TIMER4]--;
+        }
+       else
+       {
+            BSP_AxisDisable(current_block->axisTimerOrder[TIMER4]);
+            BSP_Timer4Stop();
+        }
     }
-    // clear the interrupt flag
-    mT4ClearIntFlag();
+
+    mT4ClearIntFlag();              // clear the interrupt flag
 }
 
 void __ISR(_TIMER_3_VECTOR, ipl2) _InterruptHandler_TMR3(void)
 {
-
-    // if(current_block->direction_bits[Y_AXIS])
-    //   PORTSetBits(xAxis.directionPin.port, xAxis.directionPin.pin);
-    // else
-    //     PORTClearBits(yAxis.directionPin.port, yAxis.directionPin.pin);
-    if(steps_X)
+    if(!blockMoveActive)
     {
-        if(!(mPORTGReadBits(xAxis.enablePin.pin)))
-            steps_X--;
-    }
-    else if (current_block != Null)
-    {
-        if(current_block->steps_x)
+        if(!(mPORTGReadBits(xAxis.enablePin.pin)) && (steps_X))
         {
-            if(!(mPORTGReadBits(xAxis.enablePin.pin)))
-                current_block->steps_x--;
+            steps_X--;
         }
         else
         {
-            //CloseOC2();
             BSP_AxisDisable(X_AXIS);
             BSP_Timer3Stop();
         }
     }
     else
     {
-        //CloseOC2();
-        BSP_AxisDisable(X_AXIS);
-        BSP_Timer3Stop();
-    }
-     
-    // clear the interrupt flag
-    mT3ClearIntFlag();
-}
-
-void __ISR(_TIMER_2_VECTOR, ipl3) _InterruptHandler_TMR2(void)
-{
-    //if(current_block->direction_bits[X_AXIS])
-    //    PORTSetBits(xAxis.directionPin.port, xAxis.directionPin.pin);
-    //else
-    //   PORTClearBits(xAxis.directionPin.port, xAxis.directionPin.pin);
-    if(steps_Y)
-    {
-        if(!(mPORTEReadBits(yAxis.enablePin.pin)))
-            steps_Y--;
-    }
-    else if (current_block != Null)
-    {
-        if( (current_block->steps_y))
+        if(current_block->steps[current_block->axisTimerOrder[TIMER3]])
         {
-            if(!(mPORTEReadBits(yAxis.enablePin.pin)))
-                current_block->steps_y--;
+               current_block->steps[current_block->axisTimerOrder[TIMER3]]--;
         }
         else
         {
-            //CloseOC1();
+            BSP_AxisDisable(current_block->axisTimerOrder[TIMER3]);
+            BSP_Timer3Stop();
+        }
+    }
+     
+    mT3ClearIntFlag();    // clear the interrupt flag
+}
+
+void __ISR(_TIMER_2_VECTOR, ipl2) _InterruptHandler_TMR2(void)
+{
+    if(!blockMoveActive)
+    {
+        if(!(mPORTEReadBits(yAxis.enablePin.pin)) && (steps_Y))
+        {
+            steps_Y--;
+        }
+        else
+        {
             BSP_AxisDisable(Y_AXIS);
             BSP_Timer2Stop();
         }
     }
     else
     {
-       //CloseOC1();
-       BSP_AxisDisable(Y_AXIS);
-       BSP_Timer2Stop();
+        if(current_block->steps[current_block->axisTimerOrder[TIMER2]])
+        {
+                current_block->steps[current_block->axisTimerOrder[TIMER2]]--;
+        }
+        else
+        {
+            BSP_AxisDisable(current_block->axisTimerOrder[TIMER2]);
+            BSP_Timer2Stop();
+        }
     }
-        
-     // clear the interrupt flag
-     mT2ClearIntFlag();
+         
+     mT2ClearIntFlag();     // clear the interrupt flag
 }
 
 
 
 //Main Timer for total movement time and block handling
-void __ISR(_TIMER_1_VECTOR, ipl3) _InterruptHandler_TMR1(void)
+void __ISR(_TIMER_1_VECTOR, ipl2) _InterruptHandler_TMR1(void)
 {
+    uint8_t i;
+    uint8_t axisOCConfig[N_AXIS];
     // clear the interrupt flag
     mT1ClearIntFlag();
 
-    if(current_block == Null)
+
+
+    if(current_block != Null)       // If we just finished a block
+        plan_discard_current_block();
+    current_block = plan_get_current_block();
+
+    if(current_block != Null)   // If there is a new movement to do
     {
-        current_block = plan_get_current_block();
-        if(current_block != Null)
+        for(i = 0; i < current_block->numberOfTimers; i++)
         {
-            if(current_block->activeAxisCount == 3)
+            if(i == 0)
             {
-                if(current_block->minStepAxis < N_AXIS) // If they are not all equal  // TODO:  If any of the step counts are equal we dont need Timer4
-                {
-                    switch(current_block->minStepAxis)  // Need to configure OC Module to be Single Pulse Output and other two OC modules to be continuous pulse
-                    {
-                        case X_AXIS:
-                            BSP_Timer4Start((uint16_t)current_block->steppingFreq[X_AXIS]);// Use Timer4 Interrupt to trigger single output pulse
-                            OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER3_SRC|OC_SINGLE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3());   // X_AXIS = Single Pulse
-
-                            BSP_Timer2Start((uint16_t)current_block->steppingFreq[Y_AXIS]);
-                            OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2()); // Y_AXIS = Continuous Pulse
-
-                            BSP_Timer3Start((uint16_t)current_block->steppingFreq[Z_AXIS]);
-                            OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER3_SRC|OC_CONTINUE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3()); // Z_AXIS = Continuous Pulse
-                            break;
-
-                        case Y_AXIS:
-                            BSP_Timer4Start((uint16_t)current_block->steppingFreq[Y_AXIS]);// Use Timer4 Interrupt to trigger single output pulse
-                            OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER3_SRC|OC_SINGLE_PULSE), (ReadPeriod3()>>1), ReadPeriod3());    // Y_AXIS = Single Pulse
-
-                            BSP_Timer2Start((uint16_t)current_block->steppingFreq[X_AXIS]);
-                            OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());   // X_AXIS = Continuous Pulse
-
-                            BSP_Timer3Start((uint16_t)current_block->steppingFreq[Z_AXIS]);
-                            OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER3_SRC|OC_CONTINUE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3()); // Z_AXIS = Continuous Pulse
-                            break;
-
-                        case Z_AXIS:
-                            BSP_Timer4Start((uint16_t)current_block->steppingFreq[Z_AXIS]);// Use Timer4 Interrupt to trigger single output pulse
-                            OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER3_SRC|OC_SINGLE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3());    // Z_AXIS = Single Pulse
-
-                            BSP_Timer3Start((uint16_t)current_block->steppingFreq[X_AXIS]);
-                            OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER3_SRC|OC_CONTINUE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3());   // X_AXIS = Continuous Pulse
-
-                            BSP_Timer2Start((uint16_t)current_block->steppingFreq[Y_AXIS]);
-                            OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2()); // Y_AXIS = Continuous Pulse
-                            break;
-
-                        default:
-                            // error
-                            break;
-                    }
-                }
-                else
-                {
-                    BSP_Timer2Start((uint16_t)current_block->steppingFreq[X_AXIS]);     // All Steps Counts are equal so just use on timer
-                    OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2()); // Y_AXIS = Continuous Pulse
-                    OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());   // X_AXIS = Continuous Pulse
-                    OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2()); // Z_AXIS = Continuous Pulse
-                }
-                BSP_AxisEnable(Y_AXIS, current_block->direction_bits[Y_AXIS]);
-                BSP_AxisEnable(X_AXIS, current_block->direction_bits[X_AXIS]);
-                BSP_AxisEnable(Z_AXIS, current_block->direction_bits[Z_AXIS]);
+                WritePeriod2(current_block->timerPeriod[i]);
+                axisOCConfig[i] = OC_TIMER2_SRC|OC_CONTINUE_PULSE;
             }
-            else if (current_block->activeAxisCount == 2)   // 2 Axis Enabled
+            else if(i == 1)
             {
-                if(current_block->steps_y)
-                {
-                    BSP_Timer2Start((uint16_t)current_block->steppingFreq[Y_AXIS]);
-                    OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2()); // Y_AXIS = Continuous Pulse
-
-
-                    if(current_block->steps_x)
-                    {
-                        BSP_Timer3Start((uint16_t)current_block->steppingFreq[X_AXIS]);
-                        OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER3_SRC|OC_CONTINUE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3());   // X_AXIS = Continuous Pulse
-
-                        BSP_AxisEnable(X_AXIS, current_block->direction_bits[X_AXIS]);
-                        BSP_AxisEnable(Y_AXIS, current_block->direction_bits[Y_AXIS]);
-                    }
-                    else
-                    {
-                        BSP_Timer3Start((uint16_t)current_block->steppingFreq[Z_AXIS]);
-                        OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER3_SRC|OC_CONTINUE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3()); // Z_AXIS = Continuous Pulse
-
-                        BSP_AxisEnable(Z_AXIS, current_block->direction_bits[Z_AXIS]);
-                        BSP_AxisEnable(Y_AXIS, current_block->direction_bits[Y_AXIS]);
-                    }
-                }
-                else
-                {
-                    BSP_Timer2Start((uint16_t)current_block->steppingFreq[X_AXIS]);
-                    OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());   // X_AXIS = Continuous Pulse
-
-
-                    BSP_Timer3Start((uint16_t)current_block->steppingFreq[Z_AXIS]);
-                    OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER3_SRC|OC_CONTINUE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3()); // Z_AXIS = Continuous Pulse
-
-                    BSP_AxisEnable(Z_AXIS, current_block->direction_bits[Z_AXIS]);
-                    BSP_AxisEnable(X_AXIS, current_block->direction_bits[X_AXIS]);
-                }
+                WritePeriod3(current_block->timerPeriod[i]);
+                axisOCConfig[i] = OC_TIMER3_SRC|OC_CONTINUE_PULSE;
             }
-            else        // Only One axis Enabled
+            else
             {
-                if(current_block->steps_y)
-                {
-                    BSP_Timer2Start((uint16_t)current_block->steppingFreq[Y_AXIS]);
-                    OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2()); // Y_AXIS = Continuous Pulse
-                    BSP_AxisEnable(Y_AXIS, current_block->direction_bits[Y_AXIS]);
-                }
-                else if(current_block->steps_x)
-                {
-                    BSP_Timer2Start((uint16_t)current_block->steppingFreq[X_AXIS]);
-                    OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());   // X_AXIS = Continuous Pulse
-
-                    BSP_AxisEnable(X_AXIS, current_block->direction_bits[X_AXIS]);
-                }
-                else
-                {
-                    BSP_Timer2Start((uint16_t)current_block->steppingFreq[Z_AXIS]);
-                    OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2()); // Z_AXIS = Continuous Pulse
-
-                    BSP_AxisEnable(Z_AXIS, current_block->direction_bits[Z_AXIS]);
-                }
-                //BSP_Timer1Start(0x1);
-                milliSecondCount = 0;
+                WritePeriod4(current_block->timerPeriod[i]);
+                axisOCConfig[i] = OC_TIMER2_SRC|OC_SINGLE_PULSE;
             }
         }
+        for(i = 0; i < current_block->activeAxisCount; i++)
+        {
+            switch(current_block->axisTimerOrder[i])
+            {
+                case X_AXIS:
+                    OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
+                                |axisOCConfig[i]),  (ReadPeriod2()>>1), ReadPeriod2());   // X_AXIS = Single Pulse
+                    if(current_block->direction_bits[X_AXIS] == POSITIVE)
+                        PORTSetBits(xAxis.directionPin.port, xAxis.directionPin.pin);
+                    else
+                        PORTClearBits(xAxis.directionPin.port, xAxis.directionPin.pin);
+
+                    PORTClearBits(xAxis.enablePin.port, xAxis.enablePin.pin);
+                    break;
+                case Y_AXIS:
+                    OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
+                                |axisOCConfig[i]),  (ReadPeriod2()>>1), ReadPeriod2()); // Y_AXIS = Continuous Pulse
+                    if(current_block->direction_bits[Y_AXIS] == POSITIVE)
+                        PORTSetBits(yAxis.directionPin.port, yAxis.directionPin.pin);
+                    else
+                        PORTClearBits(yAxis.directionPin.port, yAxis.directionPin.pin);
+
+                    PORTClearBits(yAxis.enablePin.port, yAxis.enablePin.pin);
+                    break;
+                case Z_AXIS:
+                    OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
+                                |axisOCConfig[i]),  (ReadPeriod2()>>1), ReadPeriod2());    // Z_AXIS = Single Pulse
+                    if(current_block->direction_bits[Z_AXIS] == POSITIVE)
+                        PORTSetBits(zAxis.directionPin.port, zAxis.directionPin.pin);
+                    else
+                        PORTClearBits(zAxis.directionPin.port, zAxis.directionPin.pin);
+
+                    PORTClearBits(zAxis.enablePin.port, zAxis.enablePin.pin);
+                    break;
+                default:
+                    break;
+            }
+          }
+        for(i = 0; i < current_block->numberOfTimers; i++)
+        {
+            if(i == 0)
+                OpenTimer2(current_block->timerConfig[i], current_block->timerPeriod[i]);
+            else if(i == 1)
+                OpenTimer3(current_block->timerConfig[i], current_block->timerPeriod[i]);
+            else
+                OpenTimer4(current_block->timerConfig[i], current_block->timerPeriod[i]);
+        }
+
+
+
+
+        blockMoveActive = TRUE;
+        BSP_Timer1Start((uint16_t)current_block->maxTimerFrequency);   // Set Timer1 to interrupt once the movement is done so we can load the next block
     }
     else
     {
-        if(milliSecondCount*1000 >= current_block->moveTime)
-        {
-            current_block = Null;
-            plan_discard_current_block();
-        }
+        // Set a global flag to let main know we are waiting to recieve a new command
+        current_block = Null;
+        BSP_Timer1Stop();
+        blockMoveActive = FALSE;
+        // Disable the Timer
     }
+
+
 }
 
 

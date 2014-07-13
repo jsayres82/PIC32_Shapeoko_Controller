@@ -41,7 +41,7 @@
 //    if (target[Z_AXIS] < gcode.position[Z_AXIS])
 //        zDirection = NEGATIVE;
     sys.state = STATE_QUEUED;
-    BSP_Timer1Start(1);
+    BSP_Timer1Start(1000);
     
 
     

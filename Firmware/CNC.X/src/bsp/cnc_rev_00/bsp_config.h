@@ -82,6 +82,9 @@ extern pinconfig_t yLimitInput;
   Description:
     This constant identifies input
 */
+#define TIMER2          0
+#define TIMER3          1
+#define TIMER4          2
 
 #define BSP_INPUT        1
 
@@ -226,7 +229,7 @@ void BSP_Initialize(void);
     BSP should be initialized by calling void BSP_Initialize(void) function.
 */
 
-void BSP_Timer2Start(int16_t frequency);
+void BSP_Timer2Start(uint16_t frequency);
 
 // *****************************************************************************
 /* Function: void BSP_Timer3Start(int16_t period)
@@ -244,7 +247,7 @@ void BSP_Timer2Start(int16_t frequency);
     BSP should be initialized by calling void BSP_Initialize(void) function.
 */
 
-void BSP_Timer3Start(int16_t frequency);
+void BSP_Timer3Start(uint16_t frequency);
 
 
 // *****************************************************************************

@@ -26,7 +26,8 @@ static volatile uint8_t block_buffer_tail;       // Index of the block to proces
 static uint8_t next_buffer_head;                 // Index of the next buffer head
 
 // Define planner variables
-typedef struct {
+typedef struct
+{
   int32_t position[3];             // The planner position of the tool in absolute steps. Kept separate
                                    // from g-code position for movements requiring multiple line motions,
                                    // i.e. arcs, canned cycles, and backlash compensation.
@@ -336,7 +337,8 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
 {
   // Prepare to set up new block
   block_t *block = &block_buffer[block_buffer_head];
-
+  uint8_t i,j, temp;
+  uint8_t timerCount = 0;
   // Calculate target position in absolute steps
   int32_t target[3];
   target[X_AXIS] = lround((x)*settings.steps_per_mm[X_AXIS]);//*50800);  //steps per mm
@@ -352,40 +354,63 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
   if (target[Z_AXIS] < pl.position[Z_AXIS]) { block->direction_bits[Z_AXIS] |= NEGATIVE; }
 
   // Number of steps for each axis
-  block->steps_x = labs(target[X_AXIS]-pl.position[X_AXIS]);
-  block->steps_y = labs(target[Y_AXIS]-pl.position[Y_AXIS]);
-  block->steps_z = labs(target[Z_AXIS]-pl.position[Z_AXIS]);
-  block->step_event_count = max(block->steps_x, max(block->steps_y, block->steps_z));
+  block->steps[X_AXIS] = labs(target[X_AXIS]-pl.position[X_AXIS]);
+  block->steps[Y_AXIS] = labs(target[Y_AXIS]-pl.position[Y_AXIS]);
+  block->steps[Z_AXIS] = labs(target[Z_AXIS]-pl.position[Z_AXIS]);
+  block->step_event_count = max(block->steps[X_AXIS], max(block->steps[Y_AXIS], block->steps[Z_AXIS]));
 
   // Bail if this is a zero-length block
   if (block->step_event_count == 0) { return; };
 
-  if(block->steps_x)
-      block->activeAxisCount++;
-  if(block->steps_y)
-      block->activeAxisCount++;
-  if(block->steps_z)
-      block->activeAxisCount++;
-
-  if(block->activeAxisCount == 3)       // if we have to use Timer4
+  if(block->steps[X_AXIS])
   {
-      if((block->steps_z != block->steps_y)&(block->steps_z != block->steps_x)&(block->steps_x != block->steps_y))   // If they are not all equal
-      {
-          if(block->steps_z < block->steps_y)       // Does Y Axis have fewest steps
-          {
-              if(block->steps_z < block->steps_x)   // Does Z Axis have fewest steps
-                  block->minStepAxis = Z_AXIS;
-              else                                  // X Axis has fewest steps
-                  block->minStepAxis = X_AXIS;
-          }
-          else if(block->steps_y <= block->steps_x) // We know Z Axis isn't the minimum step count so Does Y axis have fewest steps
-              block->minStepAxis = Y_AXIS;
-          else                                      // X Axis has fewest steps
-              block->minStepAxis = X_AXIS;
-      }
-      else
-          block->minStepAxis = N_AXIS;          // All axis are same number of steps so we can use same timer  for all three OC modules
+      block->axisTimerOrder[block->activeAxisCount] = X_AXIS;
+      block->activeAxisCount++;
+      timerCount++;
   }
+  if(block->steps[Y_AXIS])
+  {
+     block->axisTimerOrder[block->activeAxisCount] = Y_AXIS;
+     block->activeAxisCount++;
+     if(timerCount)
+     {
+        if((block->steps[X_AXIS] != block->steps[Y_AXIS]))
+            timerCount++;
+     }
+     else
+     {
+         timerCount++;
+     }
+  }
+  if(block->steps[Z_AXIS])
+  {
+     block->axisTimerOrder[block->activeAxisCount] = Z_AXIS;
+     block->activeAxisCount++;
+        if(block->steps[Z_AXIS] != block->steps[Y_AXIS])
+        {
+           if(block->steps[Z_AXIS] != block->steps[X_AXIS])
+                   timerCount = block->activeAxisCount;
+        }
+        else
+        {
+            if(block->steps[Z_AXIS] != block->steps[X_AXIS])
+                 timerCount = block->activeAxisCount;
+        }
+  }
+
+  for(i = 0; i < (timerCount - 1); i++)                 // Set the correct order
+  {
+      for(j = 0; j < (block->activeAxisCount - 1); j++)
+      {
+          if(block->axisTimerOrder[j] <= block->axisTimerOrder[j+1])
+          {
+              temp = block->axisTimerOrder[j];
+              block->axisTimerOrder[j] = block->axisTimerOrder[j+1];
+              block->axisTimerOrder[j+1] = temp;
+          }
+      }
+  }
+
 
   // Compute path vector in terms of absolute step target and current positions
   float delta_mm[3];
@@ -395,6 +420,12 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
   block->millimeters = sqrt(delta_mm[X_AXIS]*delta_mm[X_AXIS] + delta_mm[Y_AXIS]*delta_mm[Y_AXIS] +
                             delta_mm[Z_AXIS]*delta_mm[Z_AXIS]);
   float inverse_millimeters = 1.0/block->millimeters;  // Inverse millimeters to remove multiple divides
+
+
+
+
+
+
 
   // Calculate speed in mm/minute for each axis. No divide by zero due to previous checks.
   // NOTE: Minimum stepper speed is limited by MINIMUM_STEPS_PER_MINUTE in stepper.c
@@ -406,12 +437,62 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
   {
     inverse_minute = 1.0 / feed_rate;
   }
-  block->moveTime = ceil((1/inverse_minute)*60);
+  block->moveTime = ((1/inverse_minute)*60);            // In Seconds
+
   block->steppingFreq[Y_AXIS] = block->steps_y /block->moveTime;
   block->steppingFreq[X_AXIS] = block->steps_x /block->moveTime;
   block->steppingFreq[Z_AXIS] = block->steps_z /block->moveTime;
   block->nominal_speed = block->millimeters * inverse_minute; // (mm/min) Always > 0
   block->nominal_rate = ceil(block->step_event_count * inverse_minute); // (step/min) Always > 0
+
+  block->numberOfTimers = timerCount;
+
+  for(i = 0; i < timerCount; i++)
+  {
+      j = (uint32_t)(GetPeripheralClock()/block->steppingFreq[i]);
+
+      if(j <= 65536)
+      {
+          block->timerConfig[i]=(T2_ON| T2_SOURCE_INT|T2_PS_1_1);
+          block->timerPeriod[i] = j;
+      }
+      else if((j >> 1)<= 65536)
+      {
+          block->timerConfig[i] =(T2_ON| T2_SOURCE_INT|T2_PS_1_2);
+          block->timerPeriod[i] = T2_PS_1_2*(uint16_t)j;
+      }
+      else if((j >> 2)<= 65536)
+      {
+          block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_4);
+          block->timerPeriod[i] =  T2_PS_1_4*(uint16_t)j;
+      }
+      else if((j >> 3)<= 65536)
+      {
+          block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_8);
+          block->timerPeriod[i] = T2_PS_1_8*(uint16_t)j;
+      }
+      else if((j >> 4)<= 65536)
+      {
+          block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_16);
+          block->timerPeriod[i] = T2_PS_1_16*(uint16_t)j;
+      }
+      else if((j >> 5)<= 65536)
+      {
+          block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_32);
+          block->timerPeriod[i] = T2_PS_1_32*(uint16_t)j;
+      }
+      else if((j >> 6)<= 65536)
+      {
+          block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_64);
+          block->timerPeriod[i] = T2_PS_1_64*(uint16_t)j;
+      }
+      else
+      {
+         block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_256);
+         block->timerPeriod[i] = T2_PS_1_256*(uint16_t)j;
+      }
+    }
+
 
   // Compute the acceleration rate for the trapezoid generator. Depending on the slope of the line
   // average travel per step event changes. For a line along one axis the travel per step event

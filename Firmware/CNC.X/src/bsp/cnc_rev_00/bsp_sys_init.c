@@ -170,7 +170,7 @@ ocModule_e spindleSpdPWM = OC4;
 void BSP_Initialize(void )
 {
     //Timer Intitialization, Timers OFF, Period set to 1 milliSecond
-    OpenTimer1(T1_OFF | T1_SOURCE_INT | T1_PS_1_8, 1);
+    OpenTimer1(T1_OFF | T1_SOURCE_INT | T1_PS_1_1, 1);
     ConfigIntTimer1(T1_INT_ON | T1_INT_PRIOR_2);
      //Timer Intitialization, Timers OFF, Period set to 1 milliSecond
     OpenTimer2(T2_OFF | T2_SOURCE_INT | T2_PS_1_256, T2_TICK);
@@ -313,14 +313,35 @@ void BSP_MoveAxis(uint8_t axis, uint8_t dir, uint16_t period)
     }
 
 }
-void BSP_Timer1Start(int16_t frequency)
+void BSP_Timer1Start(uint16_t frequency)
 {
+    uint32_t ticks;
     mT1ClearIntFlag();
-    OpenTimer1((T1_ON|T1_SOURCE_INT| T1_PS_1_256), GetPeripheralClock()/(T1_PS_1_64*frequency));
+    ticks = GetPeripheralClock()/frequency;
+    if(ticks <= 65536)
+    {
+        OpenTimer1((T1_ON|T1_PS_1_1),(uint16_t)ticks);
+    }
+    else if(((ticks >> 3)<= 65536))
+    {
+        OpenTimer1((T1_ON| T1_SOURCE_INT|T1_PS_1_8),T1_PS_1_8*(uint16_t)ticks);
+    }
+    else if(((ticks >> 6)<= 65536))
+    {
+        OpenTimer1((T1_ON| T1_SOURCE_INT|T1_PS_1_64),T1_PS_1_64*(uint16_t)ticks);
+    }
+    else if(((ticks >> 7)<= 65536))
+    {
+        OpenTimer1((T1_ON| T1_SOURCE_INT|T1_PS_1_256),T1_PS_1_256*(uint16_t)ticks);
+    }
+    else
+    {
+        //error
+    }
     ConfigIntTimer1(T1_INT_ON | T1_INT_PRIOR_2);
     mT1IntEnable(1);
 }
-void BSP_Timer2Start(int16_t frequency)
+void BSP_Timer2Start(uint16_t frequency)
 {
     uint32_t ticks;
     mT2ClearIntFlag();
@@ -335,7 +356,7 @@ void BSP_Timer2Start(int16_t frequency)
     }
     else if(((ticks >> 2)<= 65536))
     {
-        OpenTimer2((T3_ON| T3_SOURCE_INT|T3_PS_1_4),T2_PS_1_4*(uint16_t)ticks);
+        OpenTimer2((T2_ON| T2_SOURCE_INT|T2_PS_1_4),T2_PS_1_4*(uint16_t)ticks);
     }
     else if(((ticks >> 3)<= 65536))
     {
@@ -365,7 +386,7 @@ void BSP_Timer2Start(int16_t frequency)
     mT2IntEnable(1);
 }
 
-void BSP_Timer3Start(int16_t frequency)
+void BSP_Timer3Start(uint16_t frequency)
 {
     uint32_t ticks;
     mT3ClearIntFlag();
