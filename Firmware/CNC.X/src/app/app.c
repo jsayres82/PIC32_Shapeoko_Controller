@@ -131,6 +131,7 @@ volatile bool zLimitDetected = FALSE;
 
 void APP_Initialize ( void )
 {
+    GcodeInit();
     uint16_t tmr2Period, tmr3Period;
     /* TODO: 093. Initialize your application's state machine and other
      * parameters.

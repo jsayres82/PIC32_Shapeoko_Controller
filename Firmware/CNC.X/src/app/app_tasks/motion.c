@@ -17,7 +17,7 @@
 
  void MotionLine(float X, float Y, float Z, float feed_rate, uint8_t invert_feed_rate)
  {
-    plan_buffer_line(X,Y,Z,250, invert_feed_rate);
+    plan_buffer_line(X, Y, Z, 250.0 , invert_feed_rate);
 //    float  target[3];
 //    uint8_t xDirection = POSITIVE;
 //    uint8_t yDirection = POSITIVE;

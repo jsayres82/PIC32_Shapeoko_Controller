@@ -148,7 +148,11 @@ void __ISR(_TIMER_4_VECTOR, ipl2) _InterruptHandler_TMR4(void)
             axisCompletedCount++;
             stepCount = 0;
             if(current_block->activeAxisCount == axisCompletedCount)
+            {
                 current_block = Null;
+                CloseCoreTimer();
+                blockMoveActive = FALSE;
+            }
         }
     }
 
@@ -183,7 +187,11 @@ void __ISR(_TIMER_3_VECTOR, ipl2) _InterruptHandler_TMR3(void)
             axisCompletedCount++;
             stepCount = 0;
             if(current_block->activeAxisCount == axisCompletedCount)
+            {
                 current_block = Null;
+                CloseCoreTimer();
+                blockMoveActive = FALSE;
+            }
         }
     }
      
@@ -218,7 +226,11 @@ void __ISR(_TIMER_2_VECTOR, ipl2) _InterruptHandler_TMR2(void)
             axisCompletedCount++;
             stepCount = 0;
             if(current_block->activeAxisCount == axisCompletedCount)
+            {
                 current_block = Null;
+                CloseCoreTimer();
+                blockMoveActive = FALSE;
+            }
         }
     }
          
@@ -286,59 +298,13 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
 
     if(current_block != Null)   // If there is a new movement to do
     {
-//        switch(current_block->numberOfTimers)
-//        {
-//             case 1:
-//                 WritePeriod2(current_block->timerPeriod[i]);
-//                 for(i = 0; i < current_block->activeAxisCount; i++)
-//                    axisOCConfig[current_block->axisTimerOrder[i]] = OC_TIMER2_SRC|OC_CONTINUE_PULSE;
-//                 timer2AxisCount == current_block->activeAxisCount;
-//                 timer3AxisCount = 0;
-//                 timer4AxisCount = 0;
-//                 break;
-//             case 2:
-//                 WritePeriod2(current_block->timerPeriod[0]);
-//                 axisOCConfig[current_block->axisTimerOrder[0]] = OC_TIMER2_SRC|OC_CONTINUE_PULSE;
-//                 if(current_block->timerPeriod[0] == current_block->timerPeriod[1])
-//                 {
-//                     axisOCConfig[current_block->axisTimerOrder[1]] = OC_TIMER2_SRC|OC_CONTINUE_PULSE;
-//                     WritePeriod3(current_block->timerPeriod[2]);
-//                     axisOCConfig[current_block->axisTimerOrder[2]] = OC_TIMER3_SRC|OC_CONTINUE_PULSE;
-//                     timer2AxisCount = 2;
-//                     timer3AxisCount = 1;
-//                 }
-//                 else
-//                 {
-//                    WritePeriod3(current_block->timerPeriod[1]);
-//                    axisOCConfig[current_block->axisTimerOrder[1]] = OC_TIMER3_SRC|OC_CONTINUE_PULSE;
-//                    axisOCConfig[current_block->axisTimerOrder[2]] = OC_TIMER3_SRC|OC_CONTINUE_PULSE;
-//                    timer2AxisCount = 1;
-//                    timer3AxisCount = current_block->activeAxisCount - 1;
-//                 }
-//                 timer4AxisCount = 0;
-//                 break;
-//             case 3:
-//                 WritePeriod2(current_block->timerPeriod[0]);
-//                 axisOCConfig[current_block->axisTimerOrder[0]] = OC_TIMER2_SRC|OC_CONTINUE_PULSE;
-//                 WritePeriod3(current_block->timerPeriod[1]);
-//                 axisOCConfig[current_block->axisTimerOrder[1]] = OC_TIMER3_SRC|OC_CONTINUE_PULSE;
-//                 WritePeriod4(current_block->timerPeriod[2]);
-//                 axisOCConfig[current_block->axisTimerOrder[2]] = OC_TIMER2_SRC|OC_SINGLE_PULSE;
-//                 timer2AxisCount = 1;
-//                 timer3AxisCount = 1;
-//                 timer4AxisCount = 1;
-//                 break;
-//             default:
-//                 //
-//                 break;
-//         }
         for(i = 0; i < current_block->activeAxisCount; i++)
         {
             switch(current_block->axisTimerOrder[i])
             {
                 case X_AXIS:
 
-                    if(current_block->direction_bits[X_AXIS] == POSITIVE)
+                    if(current_block->targetPos[X_AXIS] > current_block->currentPos[X_AXIS])
                         PORTSetBits(xAxis.directionPin.port, xAxis.directionPin.pin);
                     else
                         PORTClearBits(xAxis.directionPin.port, xAxis.directionPin.pin);
@@ -354,7 +320,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                     mT2IntEnable(1);
                     break;
                 case Y_AXIS:
-                    if(current_block->direction_bits[Y_AXIS] == POSITIVE)
+                    if(current_block->targetPos[Y_AXIS] > current_block->currentPos[Y_AXIS])
                         PORTSetBits(yAxis.directionPin.port, yAxis.directionPin.pin);
                     else
                         PORTClearBits(yAxis.directionPin.port, yAxis.directionPin.pin);
@@ -369,7 +335,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                     break;
                 case Z_AXIS:
 
-                    if(current_block->direction_bits[Z_AXIS] == POSITIVE)
+                    if(current_block->targetPos[Z_AXIS] > current_block->currentPos[Z_AXIS])
                         PORTSetBits(zAxis.directionPin.port, zAxis.directionPin.pin);
                     else
                         PORTClearBits(zAxis.directionPin.port, zAxis.directionPin.pin);
@@ -400,34 +366,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                     break;
             }
           }
-//        for(i = 0; i < current_block->numberOfTimers; i++)
-//        {
-//            if(i == 0)
-//            {
-//                mT2ClearIntFlag();
-//                OpenTimer2(current_block->timerConfig[i], current_block->timerPeriod[i]);
-//                ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
-//                mT2IntEnable(1);
-//            }
-//            else if(i == 1)
-//            {
-//                mT3ClearIntFlag();
-//                OpenTimer3(current_block->timerConfig[i], current_block->timerPeriod[i]);
-//                ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
-//                mT3IntEnable(1);
-//            }
-//            else
-//            {
-//                mT4ClearIntFlag();
-//                OpenTimer4(current_block->timerConfig[i], current_block->timerPeriod[i]);
-//                ConfigIntTimer4(T4_INT_ON | T4_INT_PRIOR_2);
-//                mT4IntEnable(1);
-//            }
-//        }
         axisCompletedCount = 0;
-
-
-
         blockMoveActive = TRUE;
 
         UpdateCoreTimer(current_block->moveTime);        // update the period

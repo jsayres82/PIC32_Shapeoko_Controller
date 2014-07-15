@@ -25,7 +25,7 @@ extern "C" {
 typedef struct {
 
   // Fields used by the bresenham algorithm for tracing the line
-  uint8_t direction_bits[N_AXIS];            // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
+  uint8_t numberOfTimers;
   uint32_t steppingFreq[N_AXIS];
   float maxTimerFrequency;
   uint32_t steps[N_AXIS];                    // Step count along each axis
@@ -37,7 +37,9 @@ typedef struct {
   uint8_t axisTimerOrder[N_AXIS];
   uint16_t timerConfig[N_AXIS];
   uint16_t timerPeriod[N_AXIS];
-  uint8_t numberOfTimers;
+  uint32_t currentPos[N_AXIS];
+  uint32_t targetPos[N_AXIS];
+  uint8_t direction_bits[N_AXIS];            // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
   // Fields used by the motion planner to manage acceleration
   float nominal_speed;               // The nominal speed for this block in mm/min
   float entry_speed;                 // Entry speed at previous-current block junction in mm/min

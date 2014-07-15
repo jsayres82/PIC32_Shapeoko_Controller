@@ -28,7 +28,7 @@ static uint8_t next_buffer_head;                 // Index of the next buffer hea
 // Define planner variables
 typedef struct
 {
-  int32_t position[3];             // The planner position of the tool in absolute steps. Kept separate
+  uint32_t position[3];             // The planner position of the tool in absolute steps. Kept separate
                                    // from g-code position for movements requiring multiple line motions,
                                    // i.e. arcs, canned cycles, and backlash compensation.
   float previous_unit_vec[3];     // Unit vector of previous path line segment
@@ -347,12 +347,19 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
   target[Z_AXIS] = lround((z)*settings.steps_per_mm[Z_AXIS]);//*65024);  //steps per mm
 
   // Compute direction bits for this block
-  block->direction_bits[X_AXIS] = POSITIVE;
-  block->direction_bits[Y_AXIS] = POSITIVE;
-  block->direction_bits[Z_AXIS] = POSITIVE;
-  if (target[X_AXIS] < pl.position[X_AXIS]) { block->direction_bits[X_AXIS] |= NEGATIVE; }
-  if (target[Y_AXIS] < pl.position[Y_AXIS]) { block->direction_bits[Y_AXIS] |= NEGATIVE; }
-  if (target[Z_AXIS] < pl.position[Z_AXIS]) { block->direction_bits[Z_AXIS] |= NEGATIVE; }
+//  block->direction_bits[X_AXIS] = POSITIVE;
+//  block->direction_bits[Y_AXIS] = POSITIVE;
+//  block->direction_bits[Z_AXIS] = POSITIVE;
+//  if (target[X_AXIS] < pl.position[X_AXIS]) { block->direction_bits[X_AXIS] = NEGATIVE; }
+//  if (target[Y_AXIS] < pl.position[Y_AXIS]) { block->direction_bits[Y_AXIS] = NEGATIVE; }
+//  if (target[Z_AXIS] < pl.position[Z_AXIS]) { block->direction_bits[Z_AXIS] = NEGATIVE; }
+  
+  block->targetPos[X_AXIS] = target[X_AXIS];
+  block->targetPos[Y_AXIS] = target[Y_AXIS];
+  block->targetPos[Z_AXIS] = target[Z_AXIS];
+  block->currentPos[X_AXIS] = pl.position[X_AXIS];
+  block->currentPos[Y_AXIS] = pl.position[Y_AXIS];
+  block->currentPos[Z_AXIS] = pl.position[Z_AXIS];
 
   // Number of steps for each axis
   block->steps[X_AXIS] = labs(target[X_AXIS]-pl.position[X_AXIS]);

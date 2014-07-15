@@ -152,8 +152,8 @@ typedef struct{
  *  Functions
  *
  * ***************************************************************************/
-
-
+void GcodeInit(void);
+static void select_plane(char, char, char);
 int ExecuteLine( char*);
 
 void ftoa(float , char* );

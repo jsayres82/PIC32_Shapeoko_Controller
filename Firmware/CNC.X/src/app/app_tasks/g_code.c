@@ -38,13 +38,26 @@ float decimal_place = 1;
 gcode_machine_status gcode;
 
 
-//static void select_plane(char axis_0, char axis_1, char axis_2)
-//{
-  //gcode.planeAxis_0 = axis_0;
-  //gcode.planeAxis_1 = axis_1;
-  //gcode.planeAxis_2 = axis_2;
-//}
+static void select_plane(char axis_0, char axis_1, char axis_2)
+{
+  gcode.planeAxis_0 = axis_0;
+  gcode.planeAxis_1 = axis_1;
+  gcode.planeAxis_2 = axis_2;
+}
+void GcodeInit()
+{
+  //memset(&gcode, 0, sizeof(gcode));
+  gcode.inverseFeedRateMode = FALSE;
+  gcode.feedRate = 250; //settings.default_feed_rate; // Should be zero at initialization.
+//  gc.seek_rate = settings.default_seek_rate;
+  select_plane(X_AXIS, Y_AXIS, Z_AXIS);
+  gcode.absoluteMode = TRUE;
 
+  // Load default G54 coordinate system.
+ // if (!(settings_read_coord_data(gcode.coordSelect,gcode.coordSystem)))
+ //  report_status_message(STATUS_SETTING_READ_FAIL);
+ 
+}
  //Sets g-code parser position in mm. Input in steps. Called by the system abort and hard
  //limit pull-off routines.
 void gc_set_current_position(float x, float y, float z)
@@ -111,10 +124,12 @@ int ExecuteLine(char* line){
   while(next_statement(&letter, &value, line, &charCounter))
   {
     intValue = (int)value;
-    switch(letter) {
+    switch(letter)
+    {
       case 'G':
         // Set modal group values
-        switch(intValue) {
+        switch(intValue)
+        {
           case 4: case 10: case 28: case 30: case 53: case 92: group_number = MODAL_GROUP_0; break;
           case 0: case 1: case 2: case 3: case 80: group_number = MODAL_GROUP_1; break;
           case 17: case 18: case 19: group_number = MODAL_GROUP_2; break;
@@ -124,7 +139,8 @@ int ExecuteLine(char* line){
           case 54: case 55: case 56: case 57: case 58: case 59: group_number = MODAL_GROUP_12; break;
         }
         // Set 'G' commands
-        switch(intValue) {
+        switch(intValue)
+        {
           case 0: gcode.motionMode = MOTION_MODE_SEEK; break;
           case 1: gcode.motionMode = MOTION_MODE_LINEAR ; break;
           case 2: gcode.motionMode = MOTION_MODE_CW_ARC; break;
@@ -141,7 +157,8 @@ int ExecuteLine(char* line){
           case 21: gcode.inchesMode = false; break;
           case 28: case 30:
             intValue = (int)(10*value); // Multiply by 10 to pick up Gxx.1
-            switch(intValue) {
+            switch(intValue)
+            {
               case 280: nonModalAction = NON_MODAL_GO_HOME_0; break;
               case 281: nonModalAction = NON_MODAL_SET_HOME_0; break;
               case 300: nonModalAction = NON_MODAL_GO_HOME_1; break;
@@ -157,7 +174,8 @@ int ExecuteLine(char* line){
           case 91: gcode.absoluteMode = false; break;
           case 92:
             intValue = (int)(10*value); // Multiply by 10 to pick up G92.1
-            switch(intValue) {
+            switch(intValue)
+            {
               case 920: nonModalAction = NON_MODAL_SET_COORDINATE_OFFSET; break;
               case 921: nonModalAction = NON_MODAL_RESET_COORDINATE_OFFSET; break;
               default: FAIL(STATUS_UNSUPPORTED_STATEMENT);
@@ -170,12 +188,14 @@ int ExecuteLine(char* line){
         break;
       case 'M':
         // Set modal group values
-        switch(intValue) {
+        switch(intValue)
+        {
           case 0: case 1: case 2: case 30: group_number = MODAL_GROUP_4; break;
           case 3: case 4: case 5: group_number = MODAL_GROUP_7; break;
         }
         // Set 'M' commands
-        switch(intValue) {
+        switch(intValue)
+        {
           case 0: gcode.programFlow = PROGRAM_FLOW_PAUSED; break; // Program pause
           case 1: break; // Optional stop not supported. Ignore.
           case 2: case 30: gcode.programFlow = PROGRAM_FLOW_COMPLETED; break; // Program end and reset
@@ -219,17 +239,20 @@ int ExecuteLine(char* line){
   char l = 0;
   charCounter = 0;
 
-  while(next_statement(&letter, &value, line, &charCounter)){
-    switch(letter) {
+  while(next_statement(&letter, &value, line, &charCounter))
+  {
+    switch(letter)
+    {
       case 'G': case 'M': case 'N': break; // Ignore command statements and line numbers
       case 'F':
-        if (value <= 0) {  FAIL(STATUS_INVALID_STATEMENT);  } // Must be greater than zero
-        if (gcode.inverseFeedRateMode) {
+        if (value <= 0) {  FAIL(STATUS_INVALID_STATEMENT); } // Must be greater than zero
+
+        if (gcode.inverseFeedRateMode)
           inverseFeedRate = to_millimeters(value); // seconds per motion for this motion only
-        } else {
+        else
           gcode.feedRate = to_millimeters(value); // millimeters per minute
-        }
         break;
+
       case 'I': case 'J': case 'K': offset[letter-'I'] = to_millimeters(value); break;
       case 'L': l = value; break;
       case 'P': p = value; break;
@@ -266,23 +289,24 @@ int ExecuteLine(char* line){
 
 
   /* I need to do this to control my spindle*/
-  //if (sys.state != STATE_CHECK_MODE) {
+  if (sys.state != STATE_CHECK_MODE)
+  {
     //  ([M6]: Tool change should be executed here.)
 
     // [M3,M4,M5]: Update spindle state
-   // spindle_run(gcode.spindleDirection);
+    //spindleRun(gcode.spindleDirection);
 
     // [*M7,M8,M9]: Update coolant state
     //coolant_run(gcode.coolantMode);
-  //}
+  }
 /* I need to do this to control my spindle*/
 
   // [G54,G55,...,G59]: Coordinate system selection
-  if ( bit_istrue(modalGroupWords,bit(MODAL_GROUP_12)) )
-  { // Check if called in block
-    //float coord_data[N_AXIS];
-    //if (!(settings_read_coord_data(gcode.coord_select,coord_data))) { return(STATUS_SETTING_READ_FAIL); }
-    //memcpy(gcode.coord_system,coord_data,sizeof(coord_data));
+  if ( bit_istrue(modalGroupWords,bit(MODAL_GROUP_12)) )// Check if called in block
+  { 
+    float coordData[N_AXIS];
+    if (!(settings_read_coord_data(gcode.coordSelect,coordData))) { return(STATUS_SETTING_READ_FAIL); }
+    memcpy(gcode.coordSystem,coordData,sizeof(coordData));
   }
 
 
@@ -294,20 +318,22 @@ int ExecuteLine(char* line){
   switch (nonModalAction)
   {
     case NON_MODAL_DWELL:
-      if (p < 0)
-      { // Time cannot be negative.
+      if (p < 0)        // Time cannot be negative.
+      { 
         ERROR(BAD_DATA);
       }
       else
       {
         // Ignore dwell in check gcodeode modes
-        //if (sys.state != STATE_CHECK_MODE) {
-         // dwell(p);
+        if (sys.state != STATE_CHECK_MODE)
+        {
+          //motion_dwell(p);        in motion.c mc_dwell
+        }
       }
       break;
     case NON_MODAL_SET_COORDINATE_DATA:
 
-      intValue = floor(p); // Convert p value to int.
+      intValue = floor(p);              // Convert p value to int.
       
       if ((l != 2 && l != 20) || (intValue < 0 || intValue > 1))
       { // L2 and L20. P1=G54, P2=G55, ...
@@ -319,51 +345,54 @@ int ExecuteLine(char* line){
       }
       else
       {
-        if (intValue > 0) {
-            //intValue--;
-        } // Adjust P1-P6 index to EEPROM coordinate data indexing.
-        else {
-            intValue = gcode.coordSelect;
-        } // Index P0 as the active coordinate system
-        float coord_data[N_AXIS];
-        //if (!settings_read_coord_data(intValue,coord_data)) { return(STATUS_SETTING_READ_FAIL); }
+        if (intValue > 0) 
+            intValue--;// Adjust P1-P6 index to EEPROM coordinate data indexing.
+        else
+            intValue = gcode.coordSelect;// Index P0 as the active coordinate system
 
-        int i;
+        float coordData[N_AXIS];
+        if (!settings_read_coord_data(intValue,coordData)) { return(STATUS_SETTING_READ_FAIL); }
+
+        uint8_t i;
         // Update axes defined only in block. Always in machine coordinates. Can change non-active system.
-        for (i=0; i<N_AXIS; i++)
-        { // Axes indices are consistent, so loop may be used.
+        for (i=0; i < N_AXIS; i++)// Axes indices are consistent, so loop may be used.
+        { 
           if (bit_istrue(axisWords,bit(i)) )
           {
             if (l == 20)
-              coord_data[i] = gcode.position[i]-target[i]; // L20: Update axis current position to target
+              coordData[i] = gcode.position[i]-target[i]; // L20: Update axis current position to target
             else
-              coord_data[i] = target[i]; // L2: Update coordinate system axis
+              coordData[i] = target[i]; // L2: Update coordinate system axis
           }
         }
         /*  THIS IS FOR SAVING COORDINATES TO EEPROM FOR POWER ON POSITIONING */
-        //settings_write_coord_data(intValue,coord_data);
+        settings_write_coord_data(intValue,coordData);
         // Update system coordinate system if currently active.
 
    /*  I NEED TO SET UP PSV MEMORY READS AND WRITES USING DEE EMULATION LIBRARY   */
-        //if (gcode.coord_select == intValue) { memcpy(gcode.coord_system,coord_data,sizeof(coord_data)); }
+        if (gcode.coordSelect == intValue) { memcpy(gcode.coordSystem,coordData,sizeof(coordData)); }
 
       }
       axisWords = 0; // Axis words used. Lock out from motion modes by clearing flags.
       break;
+
     case NON_MODAL_GO_HOME_0: case NON_MODAL_GO_HOME_1:
       // Move to intermediate position before going home. Obeys current coordinate system and offsets
       // and absolute and incremental modes.
-      if (axisWords) {
-        // Apply absolute mode coordinate offsets or incremental mode offsets.
-        char i;
-        for (i=0; i<N_AXIS; i++) { // Axes indices are consistent, so loop may be used.
-          if ( bit_istrue(axisWords,bit(i)) ) {
-            if (gcode.absoluteMode) {
+      if (axisWords) // Apply absolute mode coordinate offsets or incremental mode offsets.
+      {
+        uint8_t i;
+        for (i=0; i < N_AXIS; i++)  // Axes indices are consistent, so loop may be used.
+        {
+          if ( bit_istrue(axisWords,bit(i)) )
+          {
+            if (gcode.absoluteMode) 
              target[i] += gcode.coordSystem[i] + gcode.coordOffset[i];
-            } else {
+            else
              target[i] += gcode.position[i];
-            }
-          } else {
+          } 
+          else
+          {
             target[i] = gcode.position[i];
           }
         }
@@ -371,43 +400,44 @@ int ExecuteLine(char* line){
       }
 
       // Retreive G28/30 go-home position data (in machine coordinates) from EEPROM
-      //float coord_data[N_AXIS];
-      //if (nonModalAction == NON_MODAL_GO_HOME_1) {
-  /*  I NEED TO SET UP PSV MEMORY READS AND WRITES USING DEE EMULATION LIBRARY   */
-       // if (!settings_read_coord_data(SETTING_INDEX_G30 ,coord_data)) { return(STATUS_SETTING_READ_FAIL); }
-      //}
-      //else {
-        //if (!settings_read_coord_data(SETTING_INDEX_G28 ,coord_data)) { return(STATUS_SETTING_READ_FAIL); }
-      //}
-      //MotionLine(coord_data[X_AXIS], coord_data[Y_AXIS], coord_data[Z_AXIS], settings.default_seek_rate, false);
-      //memcpy(gcode.position, coord_data, sizeof(coord_data)); // gcode.position[] = coord_data[];
-      //axisWords = 0; // Axis words used. Lock out from motion modes by clearing flags.
+      float coordData[N_AXIS];
+      if (nonModalAction == NON_MODAL_GO_HOME_1) /*  I NEED TO SET UP PSV MEMORY READS AND WRITES USING DEE EMULATION LIBRARY   */
+          if (!settings_read_coord_data(SETTING_INDEX_G30 ,coordData)) { return(STATUS_SETTING_READ_FAIL); }
+      else
+          if (!settings_read_coord_data(SETTING_INDEX_G28 ,coordData)) { return(STATUS_SETTING_READ_FAIL); }
+      MotionLine(coordData[X_AXIS], coordData[Y_AXIS], coordData[Z_AXIS], settings.default_seek_rate, false);
+      memcpy(gcode.position, coordData, sizeof(coordData)); // gcode.position[] = coord_data[];
+      axisWords = 0; // Axis words used. Lock out from motion modes by clearing flags.
       break;
 
     case NON_MODAL_SET_HOME_0: case NON_MODAL_SET_HOME_1:
-      //if (nonModalAction == NON_MODAL_SET_HOME_1) {
-        //settings_write_coord_data(SETTING_INDEX_G30,gcode.position);
-      //} else {
-        //settings_write_coord_data(SETTING_INDEX_G28,gcode.position);
-      //}
+      if (nonModalAction == NON_MODAL_SET_HOME_1) 
+        settings_write_coord_data(SETTING_INDEX_G30,gcode.position);
+      else
+        settings_write_coord_data(SETTING_INDEX_G28,gcode.position);
       break;
+
     case NON_MODAL_SET_COORDINATE_OFFSET:
-        if (!axisWords) { // No axis words
+      if (!axisWords) // No axis words
+      {
             FAIL(STATUS_INVALID_STATEMENT);
-      } else {
-        // Update axes defined only in block. Offsets current system to defined value. Does not update when
-        // active coordinate system is selected, but is still active unless G92.1 disables it.
-        char i;
-        for (i=0; i<=2; i++) { // Axes indices are consistent, so loop may be used.
-         if (bit_istrue(axisWords,bit(i)) ) {
-            gcode.coordOffset[i] = gcode.position[i]-gcode.coordSystem[i]-target[i];
+      } 
+      else
+      {
+                    // Update axes defined only in block. Offsets current system to defined value. Does not update when
+                    // active coordinate system is selected, but is still active unless G92.1 disables it.
+          char i;
+          for (i=0; i<=2; i++)        // Axes indices are consistent, so loop may be used.
+          {
+              if (bit_istrue(axisWords,bit(i)) )
+                  gcode.coordOffset[i] = gcode.position[i]-gcode.coordSystem[i]-target[i];
           }
-       }
-     }
+      }
       axisWords = 0; // Axis words used. Lock out from motion modes by clearing flags.
       break;
+
     case NON_MODAL_RESET_COORDINATE_OFFSET:
-      //clear_vector(gcode.coord_offset); // Disable G92 offsets by zeroing offset vector.
+      clear_vector(gcode.coordOffset); // Disable G92 offsets by zeroing offset vector.
       break;
   }
 
@@ -420,31 +450,31 @@ int ExecuteLine(char* line){
   // Enter motion modes only if there are axis words or a motion mode command word in the block.
   if ( bit_istrue(modalGroupWords,bit(MODAL_GROUP_1)) || axisWords )
   {
+      // G1,G2,G3 require F word in inverse time mode.
+      if ( gcode.inverseFeedRateMode )
+      {
+          if (inverseFeedRate < 0 && gcode.motionMode != MOTION_MODE_CANCEL)
+              ERROR(BAD_DATA);
+      }
 
-    // G1,G2,G3 require F word in inverse time mode.
-    if ( gcode.inverseFeedRateMode )
-    {
-      if (inverseFeedRate < 0 && gcode.motionMode != MOTION_MODE_CANCEL)
-        ERROR(BAD_DATA);
-    }
-    // Absolute override G53 only valid with G0 and G1 active.
-    if ( absoluteOverride && !(gcode.motionMode == MOTION_MODE_SEEK || gcode.motionMode == MOTION_MODE_LINEAR))
-      ERROR(BAD_DATA);
-    // Report any errors.
-    if (gcode.lineStatus) { return(gcode.lineStatus); }
+      // Absolute override G53 only valid with G0 and G1 active.
+      if ( absoluteOverride && !(gcode.motionMode == MOTION_MODE_SEEK || gcode.motionMode == MOTION_MODE_LINEAR))
+          ERROR(BAD_DATA);
+
+      // Report any errors.
+      if (gcode.lineStatus) { return(gcode.lineStatus); }
 
     // Convert all target position data to machine coordinates for executing motion. Apply
     // absolute mode coordinate offsets or incremental mode offsets.
     // NOTE: Tool offsets may be appended to these conversions when/if this feature is added.
 
-    unsigned int i;
-
-    for (i=0; i<=2; i++)
-    { // Axes indices are consistent, so loop may be used to save flash space.
-      if ( bit_istrue(axisWords,bit(i)) )
+    uint8_t i;
+    for (i=0; i <= 2; i++)// Axes indices are consistent, so loop may be used to save flash space.
+    { 
+      if ( bit_istrue(axisWords,bit(i)) ) // Do not update target in absolute override mode
       {
         if (!absoluteOverride)
-        { // Do not update target in absolute override mode
+        {
           if (gcode.absoluteMode)
               target[i] += gcode.coordSystem[i] + gcode.coordOffset[i]; // Absolute mode where offset is current position
           else 
@@ -464,7 +494,8 @@ int ExecuteLine(char* line){
         break;
       case MOTION_MODE_SEEK:
         if (!axisWords){ FAIL(STATUS_INVALID_STATEMENT); }
-        else { MotionLine(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], 10000,0); }
+        else { MotionLine(target[X_AXIS], target[Y_AXIS], target[Z_AXIS],
+                (gcode.inverseFeedRateMode) ? inverseFeedRate : gcode.feedRate, gcode.inverseFeedRateMode); };
         break;
 
       case MOTION_MODE_LINEAR:
@@ -473,19 +504,21 @@ int ExecuteLine(char* line){
         // and after an inverse time move and then check for non-zero feed rate each time. This
         // should be efficient and effective.
         if (!axisWords){ FAIL(STATUS_INVALID_STATEMENT); }
-        else{MotionLine(target[X_AXIS], target[Y_AXIS], target[Z_AXIS],  10000, 0);};
-        // Actual code:
-        //else { mc_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS],
-        //  (gc.inverse_feed_rate_mode) ? inverse_feed_rate : gc.feed_rate, gc.inverse_feed_rate_mode); }
+        else{MotionLine(target[X_AXIS], target[Y_AXIS], target[Z_AXIS],
+                (gcode.inverseFeedRateMode) ? inverseFeedRate : gcode.feedRate, gcode.inverseFeedRateMode); };
         break;
+
       case MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC:
         // Check if at least one of the axes of the selected plane has been specified. If in center
         // format arc mode, also check for at least one of the IJK axes of the selected plane was sent.
         if ( !( bit_false(axisWords,bit(gcode.planeAxis_2)) ) ||
              ( !r && !offset[gcode.planeAxis_0] && !offset[gcode.planeAxis_1] ) ) {
           ERROR(BAD_DATA);
-        } else {
-          if (r != 0) { // Arc Radius Mode
+        } 
+        else
+        {
+          if (r != 0) // Arc Radius Mode
+          {
             /*
               We need to calculate the center of the circle that has the designated radius and passes
               through both the current position and the target position. This method calculates the following
@@ -570,7 +603,8 @@ int ExecuteLine(char* line){
             // even though it is advised against ever generating such circles in a single line of g-code. By
             // inverting the sign of h_x2_div_d the center of the circles is placed on the opposite side of the line of
             // travel and thus we get the unadvisably long arcs as prescribed.
-            if (r < 0) {
+            if (r < 0)
+            {
                 h_x2_div_d = -h_x2_div_d;
                 r = -r; // Finished with r. Set to positive for mc_arc
             }
@@ -578,7 +612,9 @@ int ExecuteLine(char* line){
             offset[gcode.planeAxis_0] = 0.5*(x-(y*h_x2_div_d));
             offset[gcode.planeAxis_1] = 0.5*(y+(x*h_x2_div_d));
 
-          } else { // Arc Center Format Offset Mode
+          } 
+          else // Arc Center Format Offset Mode
+          {
             r = hypot(offset[gcode.planeAxis_0], offset[gcode.planeAxis_1]); // Compute arc radius for mc_arc
           }
 
@@ -607,8 +643,8 @@ int ExecuteLine(char* line){
   // refill and can only be resumed by the cycle start run-time command.
   if (gcode.programFlow)
   {
-    //plan_synchronize(); // Finish all remaining buffered motions. Program paused when complete.
-    //sys.auto_start = false; // Disable auto cycle start. Forces pause until cycle start issued.
+    plan_synchronize(); // Finish all remaining buffered motions. Program paused when complete.
+    sys.auto_start = false; // Disable auto cycle start. Forces pause until cycle start issued.
 
     // If complete, reset to reload defaults (G92.2,G54,G17,G90,G94,M48,G40,M5,M9). Otherwise,
     // re-enable program flow after pause complete, where cycle start will resume the program.
