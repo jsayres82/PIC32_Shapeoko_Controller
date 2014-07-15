@@ -26,7 +26,7 @@ typedef struct {
 
   // Fields used by the bresenham algorithm for tracing the line
   uint8_t direction_bits[N_AXIS];            // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
-  float steppingFreq[N_AXIS];
+  uint32_t steppingFreq[N_AXIS];
   float maxTimerFrequency;
   uint32_t steps[N_AXIS];
   uint32_t steps_x, steps_y, steps_z; // Step count along each axis
@@ -54,6 +54,7 @@ typedef struct {
   uint32_t accelerate_until;          // The index of the step event on which to stop acceleration
   uint32_t decelerate_after;          // The index of the step event on which to start decelerating
   uint32_t nominal_rate;              // The nominal step rate for this block in step_events/minute
+  uint32_t coreTimerTicks;
   float moveTime;
 } block_t;
 

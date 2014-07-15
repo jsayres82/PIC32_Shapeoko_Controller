@@ -41,7 +41,10 @@
 //    if (target[Z_AXIS] < gcode.position[Z_AXIS])
 //        zDirection = NEGATIVE;
     sys.state = STATE_QUEUED;
-    BSP_Timer1Start(1000);
+    mEnableIntCoreTimer();
+    //Set the core timer to interrupt 25 nanoSeconds
+    OpenCoreTimer(1000);          // Trigger the core timer to get a block
+
     
 
     

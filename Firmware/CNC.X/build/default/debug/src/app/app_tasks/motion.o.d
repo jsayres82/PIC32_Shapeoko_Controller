@@ -15,5 +15,4 @@ src/app/app_tasks/report.h  \
  src/app/app_tasks/settings.h  \
 src/app/app_tasks/settings.h  \
  src/app/app_tasks/defaults.h  \
-src/app/app_tasks/report.h  \
-
+src/app/app_tasks/report.h 

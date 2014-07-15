@@ -242,14 +242,11 @@ void BSP_Initialize(void )
     ConfigINT1(EXT_INT_PRI_1 | RISING_EDGE_INT | EXT_INT_ENABLE);
     ConfigINT2(EXT_INT_PRI_1 | RISING_EDGE_INT | EXT_INT_ENABLE);
 
-    //Set the core timer to interrupt every milliSecond
-    OpenCoreTimer(CORE_TICKS_PER_MILLISECOND);
-
     // The Core timer should halt when we are halted at a debug breakpoint.
     _CP0_BIC_DEBUG(_CP0_DEBUG_COUNTDM_MASK);
 
     // set up the core timer interrupt with a prioirty of 2 and zero sub-priority
-    mConfigIntCoreTimer((CT_INT_ON | CT_INT_PRIOR_2 | CT_INT_SUB_PRIOR_0));
+    mConfigIntCoreTimer((CT_INT_ON | CT_INT_PRIOR_2));
 
 
 }
@@ -316,6 +313,7 @@ void BSP_MoveAxis(uint8_t axis, uint8_t dir, uint16_t period)
 void BSP_Timer1Start(uint16_t frequency)
 {
     uint32_t ticks;
+    T1CON = 0x00;
     mT1ClearIntFlag();
     ticks = GetPeripheralClock()/frequency;
     if(ticks <= 65536)

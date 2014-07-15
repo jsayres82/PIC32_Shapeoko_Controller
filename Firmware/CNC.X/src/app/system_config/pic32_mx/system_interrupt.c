@@ -200,6 +200,7 @@ void __ISR(_TIMER_2_VECTOR, ipl2) _InterruptHandler_TMR2(void)
         {
             BSP_AxisDisable(current_block->axisTimerOrder[TIMER2]);
             BSP_Timer2Stop();
+            current_block = Null;
         }
     }
          
@@ -213,10 +214,6 @@ void __ISR(_TIMER_1_VECTOR, ipl2) _InterruptHandler_TMR1(void)
 {
     uint8_t i;
     uint8_t axisOCConfig[N_AXIS];
-    // clear the interrupt flag
-    mT1ClearIntFlag();
-
-
 
     if(current_block != Null)       // If we just finished a block
         plan_discard_current_block();
@@ -294,8 +291,9 @@ void __ISR(_TIMER_1_VECTOR, ipl2) _InterruptHandler_TMR1(void)
 
 
         blockMoveActive = TRUE;
-        BSP_Timer1Start((uint16_t)current_block->maxTimerFrequency);   // Set Timer1 to interrupt once the movement is done so we can load the next block
-    }
+        BSP_Timer1Start((uint16_t)1);   // Set Timer1 to interrupt once the movement is done so we can load the next block
+        }
+
     else
     {
         // Set a global flag to let main know we are waiting to recieve a new command
@@ -305,6 +303,7 @@ void __ISR(_TIMER_1_VECTOR, ipl2) _InterruptHandler_TMR1(void)
         // Disable the Timer
     }
 
+    mT1ClearIntFlag();
 
 }
 
@@ -341,18 +340,133 @@ void __ISR(_UART2_VECTOR, ipl2) IntUart2Handler(void)
     }
 }
 
-void __ISR(_CORE_TIMER_VECTOR, IPL2SOFT) CoreTimerHandler(void)
+
+
+
+
+
+
+void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
 {
+
+    uint8_t i;
+    uint8_t axisOCConfig[N_AXIS];
+    uint32_t coreTimerCount;
+
+    if(current_block != Null)       // If we just finished a block
+        plan_discard_current_block();
+    current_block = plan_get_current_block();
+
+    if(current_block != Null)   // If there is a new movement to do
+    {
+        switch(current_block->numberOfTimers)
+        {
+             case 1:
+                 WritePeriod2(current_block->timerPeriod[i]);
+                 for(i = 0; i < current_block->activeAxisCount; i++)
+                    axisOCConfig[i] = OC_TIMER2_SRC|OC_CONTINUE_PULSE;
+                 break;
+             case 2:
+                 WritePeriod2(current_block->timerPeriod[0]);
+                 axisOCConfig[0] = OC_TIMER2_SRC|OC_CONTINUE_PULSE;
+                 WritePeriod3(current_block->timerPeriod[1]);
+                 axisOCConfig[1] = OC_TIMER3_SRC|OC_CONTINUE_PULSE;
+                 break;
+             case 3:
+                 WritePeriod2(current_block->timerPeriod[0]);
+                 axisOCConfig[0] = OC_TIMER2_SRC|OC_CONTINUE_PULSE;
+                 WritePeriod3(current_block->timerPeriod[1]);
+                 axisOCConfig[1] = OC_TIMER3_SRC|OC_CONTINUE_PULSE;
+                 WritePeriod4(current_block->timerPeriod[2]);
+                 axisOCConfig[2] = OC_TIMER2_SRC|OC_SINGLE_PULSE;
+                 break;
+             default:
+                 //
+                 break;
+         }
+        for(i = 0; i < current_block->activeAxisCount; i++)
+        {
+            switch(current_block->axisTimerOrder[i])
+            {
+                case X_AXIS:
+                    OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
+                                |axisOCConfig[i]),  (ReadPeriod2()>>1), ReadPeriod2());   // X_AXIS = Single Pulse
+                    if(current_block->direction_bits[X_AXIS] == POSITIVE)
+                        PORTSetBits(xAxis.directionPin.port, xAxis.directionPin.pin);
+                    else
+                        PORTClearBits(xAxis.directionPin.port, xAxis.directionPin.pin);
+
+                    PORTClearBits(xAxis.enablePin.port, xAxis.enablePin.pin);
+                    break;
+                case Y_AXIS:
+                    OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
+                                |axisOCConfig[i]),  (ReadPeriod2()>>1), ReadPeriod2()); // Y_AXIS = Continuous Pulse
+                    if(current_block->direction_bits[Y_AXIS] == POSITIVE)
+                        PORTSetBits(yAxis.directionPin.port, yAxis.directionPin.pin);
+                    else
+                        PORTClearBits(yAxis.directionPin.port, yAxis.directionPin.pin);
+
+                    PORTClearBits(yAxis.enablePin.port, yAxis.enablePin.pin);
+                    break;
+                case Z_AXIS:
+                    OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
+                                |axisOCConfig[i]),  (ReadPeriod2()>>1), ReadPeriod2());    // Z_AXIS = Single Pulse
+                    if(current_block->direction_bits[Z_AXIS] == POSITIVE)
+                        PORTSetBits(zAxis.directionPin.port, zAxis.directionPin.pin);
+                    else
+                        PORTClearBits(zAxis.directionPin.port, zAxis.directionPin.pin);
+
+                    PORTClearBits(zAxis.enablePin.port, zAxis.enablePin.pin);
+                    break;
+                default:
+                    break;
+            }
+          }
+        for(i = 0; i < current_block->numberOfTimers; i++)
+        {
+            if(i == 0)
+            {
+                mT2ClearIntFlag();
+                OpenTimer2(current_block->timerConfig[i], current_block->timerPeriod[i]);
+                ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
+                mT2IntEnable(1);
+            }
+            else if(i == 1)
+            {
+                mT3ClearIntFlag();
+                OpenTimer3(current_block->timerConfig[i], current_block->timerPeriod[i]);
+                ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
+                mT3IntEnable(1);
+            }
+            else
+            {
+                mT4ClearIntFlag();
+                OpenTimer4(current_block->timerConfig[i], current_block->timerPeriod[i]);
+                ConfigIntTimer4(T4_INT_ON | T4_INT_PRIOR_2);
+                mT4IntEnable(1);
+            }
+        }
+
+
+
+
+        blockMoveActive = TRUE;
+
+        UpdateCoreTimer(current_block->moveTime);        // update the period
+        coreTimerCount = ReadCoreTimer();
+        }
+
+    else
+    {
+        // Set a global flag to let main know we are waiting to recieve a new command
+        current_block = Null;
+        CloseCoreTimer();
+        blockMoveActive = FALSE;
+        // Disable the Timer
+    }
+
     // clear the interrupt flag
     mCTClearIntFlag();
-
-    // .. things to do
-    milliSecondCount++;
-
-
-    // update the period
-    UpdateCoreTimer(CORE_TICKS_PER_MILLISECOND);
-
 
 }
 
