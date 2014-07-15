@@ -448,7 +448,7 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
   
   block->numberOfTimers = timerCount;
 
-  for(i = 0; i < timerCount; i++)
+  for(i = 0; i < block->activeAxisCount; i++)
   {
       j = ((uint32_t)(GetPeripheralClock()/block->steppingFreq[block->axisTimerOrder[i]]));
 

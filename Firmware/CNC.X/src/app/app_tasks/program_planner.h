@@ -28,11 +28,10 @@ typedef struct {
   uint8_t direction_bits[N_AXIS];            // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
   uint32_t steppingFreq[N_AXIS];
   float maxTimerFrequency;
-  uint32_t steps[N_AXIS];
-  uint32_t steps_x, steps_y, steps_z; // Step count along each axis
-  int32_t  step_event_count;          // The number of step events required to complete this block
-  uint8_t activeAxisCount;           // The number of axis that are required to move for the block
-  uint8_t minStepAxis;            // Used to determine the which axis have the highest step count and will use Timer2 and Timer3
+  uint32_t steps[N_AXIS];                    // Step count along each axis
+  int32_t  step_event_count;                 // The number of step events required to complete this block
+  uint8_t activeAxisCount;                   // The number of axis that are required to move for the block
+  uint8_t minStepAxis;                       // Used to determine the which axis have the highest step count and will use Timer2 and Timer3
                                             // to create a continous stream of pulses on their OCx pin.  If three axis are enabled
                                             // the third axis will use Timer4 to create single output pulses on it OCx Pin.
   uint8_t axisTimerOrder[N_AXIS];

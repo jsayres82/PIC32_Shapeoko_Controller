@@ -145,7 +145,7 @@ void __ISR(_TIMER_4_VECTOR, ipl2) _InterruptHandler_TMR4(void)
        {
             BSP_AxisDisable(current_block->axisTimerOrder[TIMER4]);
             BSP_Timer4Stop();
-            axisCompletedCount += timer4AxisCount;
+            axisCompletedCount++;
             stepCount = 0;
             if(current_block->activeAxisCount == axisCompletedCount)
                 current_block = Null;
@@ -180,7 +180,7 @@ void __ISR(_TIMER_3_VECTOR, ipl2) _InterruptHandler_TMR3(void)
         {
             BSP_AxisDisable(current_block->axisTimerOrder[TIMER3]);
             BSP_Timer3Stop();
-            axisCompletedCount += timer3AxisCount;
+            axisCompletedCount++;
             stepCount = 0;
             if(current_block->activeAxisCount == axisCompletedCount)
                 current_block = Null;
@@ -215,8 +215,8 @@ void __ISR(_TIMER_2_VECTOR, ipl2) _InterruptHandler_TMR2(void)
         {
             BSP_AxisDisable(current_block->axisTimerOrder[TIMER2]);
             BSP_Timer2Stop();
-            axisCompletedCount = timer2AxisCount;
-            stepCount += 0;
+            axisCompletedCount++;
+            stepCount = 0;
             if(current_block->activeAxisCount == axisCompletedCount)
                 current_block = Null;
         }
