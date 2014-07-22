@@ -31,15 +31,13 @@ typedef struct {
   uint32_t steps[N_AXIS];                    // Step count along each axis
   int32_t  step_event_count;                 // The number of step events required to complete this block
   uint8_t activeAxisCount;                   // The number of axis that are required to move for the block
-  uint8_t minStepAxis;                       // Used to determine the which axis have the highest step count and will use Timer2 and Timer3
-                                            // to create a continous stream of pulses on their OCx pin.  If three axis are enabled
-                                            // the third axis will use Timer4 to create single output pulses on it OCx Pin.
+  uint8_t minStepAxis;                       
   uint8_t axisTimerOrder[N_AXIS];
   uint16_t timerConfig[N_AXIS];
   uint16_t timerPeriod[N_AXIS];
-  uint32_t currentPos[N_AXIS];
-  uint32_t targetPos[N_AXIS];
-  uint8_t direction_bits[N_AXIS];            // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
+  int32_t currentPos[N_AXIS];
+  int32_t targetPos[N_AXIS];
+  bool direction_bits[N_AXIS];            // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
   // Fields used by the motion planner to manage acceleration
   float nominal_speed;               // The nominal speed for this block in mm/min
   float entry_speed;                 // Entry speed at previous-current block junction in mm/min
@@ -47,7 +45,6 @@ typedef struct {
   float millimeters;                 // The total travel of this block in mm
   uint8_t recalculate_flag;           // Planner flag to recalculate trapezoids on entry junction
   uint8_t nominal_length_flag;        // Planner flag for nominal speed always reached
-
   // Settings for the trapezoid generator
   uint32_t initial_rate;              // The step rate at start of block
   uint32_t final_rate;                // The step rate at end of block
@@ -57,6 +54,7 @@ typedef struct {
   uint32_t nominal_rate;              // The nominal step rate for this block in step_events/minute
   uint32_t coreTimerTicks;
   float moveTime;
+
 } block_t;
 
 // Initialize the motion plan subsystem

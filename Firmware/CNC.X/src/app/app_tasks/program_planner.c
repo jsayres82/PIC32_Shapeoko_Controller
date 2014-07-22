@@ -28,7 +28,7 @@ static uint8_t next_buffer_head;                 // Index of the next buffer hea
 // Define planner variables
 typedef struct
 {
-  uint32_t position[3];             // The planner position of the tool in absolute steps. Kept separate
+  int32_t position[3];             // The planner position of the tool in absolute steps. Kept separate
                                    // from g-code position for movements requiring multiple line motions,
                                    // i.e. arcs, canned cycles, and backlash compensation.
   float previous_unit_vec[3];     // Unit vector of previous path line segment
@@ -333,33 +333,29 @@ void plan_synchronize()
 // All position data passed to the planner must be in terms of machine position to keep the planner
 // independent of any coordinate system changes and offsets, which are handled by the g-code parser.
 // NOTE: Assumes buffer is available. Buffer checks are handled at a higher level by motion_control.
-void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert_feed_rate)
+void plan_buffer_line(float X, float Y, float Z, float feed_rate, uint8_t invert_feed_rate)
 {
   // Prepare to set up new block
   block_t *block = &block_buffer[block_buffer_head];
-  uint8_t i, temp;
+  uint8_t i;
   uint32_t j;
   uint8_t timerCount = 0;
   // Calculate target position in absolute steps
-  int32_t target[3];
-  target[X_AXIS] = lround((x)*settings.steps_per_mm[X_AXIS]);//*50800);  //steps per mm
-  target[Y_AXIS] = lround((y)*settings.steps_per_mm[Y_AXIS]);//*50800);  //steps per mm
-  target[Z_AXIS] = lround((z)*settings.steps_per_mm[Z_AXIS]);//*65024);  //steps per mm
+  int32_t target[N_AXIS];
+
+
+  target[X_AXIS] = lround(X*settings.steps_per_mm[X_AXIS]);//*50800);  //steps per mm
+  target[Y_AXIS] = lround(Y*settings.steps_per_mm[Y_AXIS]);//*50800);  //steps per mm
+  target[Z_AXIS] = lround(Z*settings.steps_per_mm[Z_AXIS]);//*65024);  //steps per mm
 
   // Compute direction bits for this block
-//  block->direction_bits[X_AXIS] = POSITIVE;
-//  block->direction_bits[Y_AXIS] = POSITIVE;
-//  block->direction_bits[Z_AXIS] = POSITIVE;
-//  if (target[X_AXIS] < pl.position[X_AXIS]) { block->direction_bits[X_AXIS] = NEGATIVE; }
-//  if (target[Y_AXIS] < pl.position[Y_AXIS]) { block->direction_bits[Y_AXIS] = NEGATIVE; }
-//  if (target[Z_AXIS] < pl.position[Z_AXIS]) { block->direction_bits[Z_AXIS] = NEGATIVE; }
-  
-  block->targetPos[X_AXIS] = target[X_AXIS];
-  block->targetPos[Y_AXIS] = target[Y_AXIS];
-  block->targetPos[Z_AXIS] = target[Z_AXIS];
-  block->currentPos[X_AXIS] = pl.position[X_AXIS];
-  block->currentPos[Y_AXIS] = pl.position[Y_AXIS];
-  block->currentPos[Z_AXIS] = pl.position[Z_AXIS];
+  block->direction_bits[X_AXIS] = 1;
+  block->direction_bits[Y_AXIS] = 1;
+  block->direction_bits[Z_AXIS] = 1;
+  if (target[X_AXIS] < pl.position[X_AXIS]) { block->direction_bits[X_AXIS] = 0; }
+  if (target[Y_AXIS] < pl.position[Y_AXIS]) { block->direction_bits[Y_AXIS] = 0; }
+  if (target[Z_AXIS] < pl.position[Z_AXIS]) { block->direction_bits[Z_AXIS] = 0; }
+
 
   // Number of steps for each axis
   block->steps[X_AXIS] = labs(target[X_AXIS]-pl.position[X_AXIS]);
@@ -374,49 +370,16 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
   {
       block->axisTimerOrder[block->activeAxisCount] = X_AXIS;
       block->activeAxisCount++;
-      timerCount++;
   }
   if(block->steps[Y_AXIS])
   {
      block->axisTimerOrder[block->activeAxisCount] = Y_AXIS;
      block->activeAxisCount++;
-     if(timerCount)
-     {
-        if((block->steps[X_AXIS] != block->steps[Y_AXIS]))
-            timerCount++;
-     }
-     else
-     {
-         timerCount++;
-     }
   }
   if(block->steps[Z_AXIS])
   {
      block->axisTimerOrder[block->activeAxisCount] = Z_AXIS;
      block->activeAxisCount++;
-        if(block->steps[Z_AXIS] != block->steps[Y_AXIS])
-        {
-           if(block->steps[Z_AXIS] != block->steps[X_AXIS])
-                   timerCount = block->activeAxisCount;
-        }
-        else
-        {
-            if(block->steps[Z_AXIS] != block->steps[X_AXIS])
-                 timerCount = block->activeAxisCount;
-        }
-  }
-
-  for(i = 0; i < (timerCount - 1); i++)                 // Set the correct order
-  {
-      for(j = 0; j < (block->activeAxisCount - 1); j++)
-      {
-          if(block->axisTimerOrder[j] <= block->axisTimerOrder[j+1])
-          {
-              temp = block->axisTimerOrder[j];
-              block->axisTimerOrder[j] = block->axisTimerOrder[j+1];
-              block->axisTimerOrder[j+1] = temp;
-          }
-      }
   }
 
 
@@ -430,13 +393,9 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
   float inverse_millimeters = 1.0/block->millimeters;  // Inverse millimeters to remove multiple divides
 
 
-
-
-
-
-
   // Calculate speed in mm/minute for each axis. No divide by zero due to previous checks.
   // NOTE: Minimum stepper speed is limited by MINIMUM_STEPS_PER_MINUTE in stepper.c
+
   float inverse_minute;
   if (!invert_feed_rate)
   {
@@ -459,37 +418,37 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
   {
       j = ((uint32_t)(GetPeripheralClock()/block->steppingFreq[block->axisTimerOrder[i]]));
 
-      if(j <= 65536)
+      if(j <= 0xFFFF)
       {
           block->timerConfig[i]=(T2_ON| T2_SOURCE_INT|T2_PS_1_1);
           block->timerPeriod[i] = (uint16_t)j;
       }
-      else if((j >> 1)<= 65536)
+      else if((j >> 1)<= 0xFFFF)
       {
           block->timerConfig[i] =(T2_ON| T2_SOURCE_INT|T2_PS_1_2);
           block->timerPeriod[i] = T2_PS_1_2*(uint16_t)j;
       }
-      else if((j >> 2)<= 65536)
+      else if((j >> 2)<= 0xFFFF)
       {
           block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_4);
           block->timerPeriod[i] =  T2_PS_1_4*(uint16_t)j;
       }
-      else if((j >> 3)<= 65536)
+      else if((j >> 3)<= 0xFFFF)
       {
           block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_8);
           block->timerPeriod[i] = T2_PS_1_8*(uint16_t)j;
       }
-      else if((j >> 4)<= 65536)
+      else if((j >> 4)<= 0xFFFF)
       {
           block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_16);
           block->timerPeriod[i] = T2_PS_1_16*(uint16_t)j;
       }
-      else if((j >> 5)<= 65536)
+      else if((j >> 5)<= 0xFFFF)
       {
           block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_32);
           block->timerPeriod[i] = T2_PS_1_32*(uint16_t)j;
       }
-      else if((j >> 6)<= 65536)
+      else if((j >> 6)<= 0xFFFF)
       {
           block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_64);
           block->timerPeriod[i] = T2_PS_1_64*(uint16_t)j;
@@ -537,7 +496,8 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
   float vmax_junction = MINIMUM_PLANNER_SPEED; // Set default max junction speed
 
   // Skip first block or when previous_nominal_speed is used as a flag for homing and offset cycles.
-  if ((block_buffer_head != block_buffer_tail) && (pl.previous_nominal_speed > 0.0)) {
+  if ((block_buffer_head != block_buffer_tail) && (pl.previous_nominal_speed > 0.0))
+  {
     // Compute cosine of angle between previous and current path. (prev_unit_vec is negative)
     // NOTE: Max junction velocity is computed without sin() or acos() by trig half angle identity.
     float cos_theta = - pl.previous_unit_vec[X_AXIS] * unit_vec[X_AXIS]
@@ -545,10 +505,12 @@ void plan_buffer_line(float x, float y, float z, float feed_rate, uint8_t invert
                        - pl.previous_unit_vec[Z_AXIS] * unit_vec[Z_AXIS] ;
 
     // Skip and use default max junction speed for 0 degree acute junction.
-    if (cos_theta < 0.95) {
+    if (cos_theta < 0.95)
+    {
       vmax_junction = min(pl.previous_nominal_speed,block->nominal_speed);
       // Skip and avoid divide by zero for straight junctions at 180 degrees. Limit to min() of nominal speeds.
-      if (cos_theta > -0.95) {
+      if (cos_theta > -0.95)
+      {
         // Compute maximum junction velocity based on maximum acceleration and junction deviation
         float sin_theta_d2 = sqrt(0.5*(1.0-cos_theta)); // Trig half angle identity. Always positive.
         vmax_junction = min(vmax_junction,

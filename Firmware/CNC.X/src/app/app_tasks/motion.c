@@ -290,6 +290,23 @@ void MotionGoHome(void)
         }
         BSP_AxisDisable(X_AXIS);
         gcode.position[X_AXIS] = 0;
+
+        //yLimitDetected = FALSE;
+//        steps_Z = 0xFFFFFFFF;
+//        BSP_Timer2Start(250);
+//        OpenOC3(YZ_PWM_ENA, (ReadPeriod2()>>1), ReadPeriod2());
+//        BSP_AxisEnable(Z_AXIS, POSITIVE);
+//        while(!(yLimitDetected)){};
+//        BSP_Timer2Start(10);
+//        OpenOC3(YZ_PWM_ENA, (ReadPeriod2()>>1), ReadPeriod2());
+//
+//        while((mPORTCReadBits(yLimitInput.pin)))
+//        {
+//            steps_Z = 0x1;
+//            BSP_AxisEnable(Z_AXIS, POSITIVE);
+//        }
+//        BSP_AxisDisable(Z_AXIS);
+
         gcode.position[Z_AXIS] = 0;
 
        

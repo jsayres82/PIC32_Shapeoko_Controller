@@ -143,12 +143,13 @@ void __ISR(_TIMER_4_VECTOR, ipl2) _InterruptHandler_TMR4(void)
         }
        else
        {
-            BSP_AxisDisable(current_block->axisTimerOrder[TIMER4]);
+            BSP_AxisDisable(Z_AXIS);
             BSP_Timer4Stop();
             axisCompletedCount++;
             stepCount = 0;
             if(current_block->activeAxisCount == axisCompletedCount)
             {
+                plan_discard_current_block();
                 current_block = Null;
                 CloseCoreTimer();
                 blockMoveActive = FALSE;
@@ -188,6 +189,7 @@ void __ISR(_TIMER_3_VECTOR, ipl2) _InterruptHandler_TMR3(void)
             stepCount = 0;
             if(current_block->activeAxisCount == axisCompletedCount)
             {
+                plan_discard_current_block();
                 current_block = Null;
                 CloseCoreTimer();
                 blockMoveActive = FALSE;
@@ -203,14 +205,29 @@ void __ISR(_TIMER_2_VECTOR, ipl2) _InterruptHandler_TMR2(void)
     static uint32_t stepCount = 0;
     if(!blockMoveActive)
     {
-        if(!(mPORTEReadBits(yAxis.enablePin.pin)) && (steps_Y))
+        if(!mPORTEReadBits(yAxis.enablePin.pin))
         {
-            steps_Y--;
+            if(steps_Y)
+            {
+                steps_Y--;
+            }
+            else
+            {
+                BSP_AxisDisable(Y_AXIS);
+                BSP_Timer2Stop();
+            }
         }
-        else
+        else if(!mPORTAReadBits(zAxis.enablePin.pin))
         {
-            BSP_AxisDisable(Y_AXIS);
-            BSP_Timer2Stop();
+            if(steps_Z)
+            {
+                steps_Z--;
+            }
+            else
+            {
+                BSP_AxisDisable(Z_AXIS);
+                BSP_Timer2Stop();
+            }
         }
     }
     else
@@ -227,6 +244,7 @@ void __ISR(_TIMER_2_VECTOR, ipl2) _InterruptHandler_TMR2(void)
             stepCount = 0;
             if(current_block->activeAxisCount == axisCompletedCount)
             {
+                plan_discard_current_block();
                 current_block = Null;
                 CloseCoreTimer();
                 blockMoveActive = FALSE;
@@ -303,9 +321,8 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
             switch(current_block->axisTimerOrder[i])
             {
                 case X_AXIS:
-
-                    if(current_block->targetPos[X_AXIS] > current_block->currentPos[X_AXIS])
-                        PORTSetBits(xAxis.directionPin.port, xAxis.directionPin.pin);
+                    if(current_block->direction_bits[X_AXIS])
+                         PORTSetBits(xAxis.directionPin.port, xAxis.directionPin.pin);
                     else
                         PORTClearBits(xAxis.directionPin.port, xAxis.directionPin.pin);
 
@@ -319,9 +336,10 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                     ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
                     mT2IntEnable(1);
                     break;
+
                 case Y_AXIS:
-                    if(current_block->targetPos[Y_AXIS] > current_block->currentPos[Y_AXIS])
-                        PORTSetBits(yAxis.directionPin.port, yAxis.directionPin.pin);
+                    if(current_block->direction_bits[Y_AXIS])
+                         PORTSetBits(yAxis.directionPin.port, yAxis.directionPin.pin);
                     else
                         PORTClearBits(yAxis.directionPin.port, yAxis.directionPin.pin);
 
@@ -333,17 +351,17 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                     ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
                     mT3IntEnable(1);
                     break;
-                case Z_AXIS:
 
-                    if(current_block->targetPos[Z_AXIS] > current_block->currentPos[Z_AXIS])
-                        PORTSetBits(zAxis.directionPin.port, zAxis.directionPin.pin);
+                case Z_AXIS:
+                    if(current_block->direction_bits[Z_AXIS])
+                         PORTSetBits(zAxis.directionPin.port, zAxis.directionPin.pin);
                     else
                         PORTClearBits(zAxis.directionPin.port, zAxis.directionPin.pin);
 
                     PORTClearBits(zAxis.enablePin.port, zAxis.enablePin.pin);
-                    if(current_block->activeAxisCount == 1)
+                    if(!current_block->steps[X_AXIS])                   // If x axis is not active
                     {
-                        WritePeriod2(current_block->timerPeriod[i]);
+                        WritePeriod2(current_block->timerPeriod[i]);        // Use timer 2 for Z movements
                         OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
                                 |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());    // Z_AXIS = Single Pulse
                                 
@@ -351,10 +369,11 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                         ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
                         mT2IntEnable(1);
                     }
-                    else
+                    else        // X Axis is active
                     {
+
                         WritePeriod4(current_block->timerPeriod[i]);
-                         OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
+                        OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
                                 |OC_TIMER2_SRC|OC_SINGLE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());    // Z_AXIS = Single Pulse
                         OpenTimer4(current_block->timerConfig[i], current_block->timerPeriod[i]);
                         ConfigIntTimer4(T4_INT_ON | T4_INT_PRIOR_2);
@@ -362,6 +381,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                     }
 
                     break;
+
                 default:
                     break;
             }
@@ -369,7 +389,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
         axisCompletedCount = 0;
         blockMoveActive = TRUE;
 
-        UpdateCoreTimer(current_block->moveTime);        // update the period
+        UpdateCoreTimer(current_block->coreTimerTicks);        // update the period
         coreTimerCount = ReadCoreTimer();
         }
 
