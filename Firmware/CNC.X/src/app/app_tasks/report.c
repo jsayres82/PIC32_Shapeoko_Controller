@@ -197,6 +197,199 @@ void report_grbl_settings() {
   BSP_WriteString(" (homing debounce, msec)\r\n$22="); printFloat(settings.homing_pulloff);
   BSP_WriteString(" (homing pull-off, mm)\r\n");
 }
+ // Prints real-time data. This function grabs a real-time snapshot of the stepper subprogram
+ // and the actual location of the CNC machine. Users may change the following function to their
+ // specific needs, but the desired real-time data report must be as short as possible. This is
+ // requires as it minimizes the computational overhead and allows grbl to keep running smoothly,
+ // especially during g-code programs with fast, short line segments and high frequency reports (5-20Hz).
+void report_realtime_status()
+{
+  // **Under construction** Bare-bones status report. Provides real-time machine position relative to
+  // the system power on location (0,0,0) and work coordinate position (G54 and G92 applied). Eventually
+  // to be added are distance to go on block, processed block id, and feed rate. Also a settings bitmask
+  // for a user to select the desired real-time data.
+  uint8_t i;
+  int32_t current_position[3]; // Copy current state of the system position variable
+  memcpy(current_position,sys.position,sizeof(sys.position));
+  float print_position[3];
+
+  // Report current machine state
+  switch (sys.state) {
+    case STATE_IDLE: BSP_WriteString("<Idle"); break;
+//    case STATE_INIT: BSP_WriteString("[Init"); break; // Never observed
+    case STATE_QUEUED: BSP_WriteString("<Queue"); break;
+    case STATE_CYCLE: BSP_WriteString("<Run"); break;
+    case STATE_HOLD: BSP_WriteString("<Hold"); break;
+    case STATE_HOMING: BSP_WriteString("<Home"); break;
+    case STATE_ALARM: BSP_WriteString("<Alarm"); break;
+    case STATE_CHECK_MODE: BSP_WriteString("<Check"); break;
+  }
+
+  BSP_WriteString(" G");
+  printInteger(gcode.coordSelect+54);
+
+  if (gcode.planeAxis_0 == X_AXIS) {
+    if (gcode.planeAxis_1 == Y_AXIS) { BSP_WriteString(" G17"); }
+    else { BSP_WriteString(" G18"); }
+  } else { BSP_WriteString(" G19"); }
+
+  if (gcode.inchesMode) { BSP_WriteString(" G20"); }
+  else { BSP_WriteString(" G21"); }
+
+  if (gcode.absoluteMode) { BSP_WriteString(" G90"); }
+  else { BSP_WriteString(" G91"); }
+
+  if (gcode.inverseFeedRateMode) { BSP_WriteString(" G93"); }
+  else { BSP_WriteString(" G94"); }
+
+  switch (gcode.programFlow) {
+    case PROGRAM_FLOW_RUNNING : BSP_WriteString(" M0"); break;
+    case PROGRAM_FLOW_PAUSED : BSP_WriteString(" M1"); break;
+    case PROGRAM_FLOW_COMPLETED : BSP_WriteString(" M2"); break;
+  }
+
+  switch (gcode.spindleDirection) {
+    case 1 : BSP_WriteString(" M3"); break;
+    case -1 : BSP_WriteString(" M4"); break;
+    case 0 : BSP_WriteString(" M5"); break;
+  }
+
+  switch (gcode.coolantMode) {
+    case COOLANT_DISABLE : BSP_WriteString(" M9"); break;
+    case COOLANT_FLOOD_ENABLE : BSP_WriteString(" M8"); break;
+    #ifdef ENABLE_M7
+      case COOLANT_MIST_ENABLE : BSP_WriteString(" M7"); break;
+    #endif
+  }
+
+  BSP_WriteString(" T");
+  printInteger(gcode.tool);
+
+  BSP_WriteString(" F");
+  if (gcode.inchesMode) { printFloat(gcode.feedRate*INCH_PER_MM); }
+  else { printFloat(gcode.feedRate); }
+
+  BSP_WriteString("]\r\n");
+}
+
+
+// Print current gcode parser mode state
+void report_gcode_modes()
+{
+  switch (gcode.motionMode) {
+    case MOTION_MODE_SEEK : BSP_WriteString("[G0"); break;
+    case MOTION_MODE_LINEAR : BSP_WriteString("[G1"); break;
+    case MOTION_MODE_CW_ARC : BSP_WriteString("[G2"); break;
+    case MOTION_MODE_CCW_ARC : BSP_WriteString("[G3"); break;
+    case MOTION_MODE_CANCEL : BSP_WriteString("[G80"); break;
+  }
+
+  BSP_WriteString(" G");
+  printInteger(gcode.coordSelect+54);
+
+  if (gcode.planeAxis_0 == X_AXIS) {
+    if (gcode.planeAxis_1 == Y_AXIS) { BSP_WriteString(" G17"); }
+    else { BSP_WriteString(" G18"); }
+  } else { BSP_WriteString(" G19"); }
+
+  if (gcode.inchesMode) { BSP_WriteString(" G20"); }
+  else { BSP_WriteString(" G21"); }
+
+  if (gcode.absoluteMode) { BSP_WriteString(" G90"); }
+  else { BSP_WriteString(" G91"); }
+
+  if (gcode.inverseFeedRateMode) { BSP_WriteString(" G93"); }
+  else { BSP_WriteString(" G94"); }
+
+  switch (gcode.programFlow) {
+    case PROGRAM_FLOW_RUNNING : BSP_WriteString(" M0"); break;
+    case PROGRAM_FLOW_PAUSED : BSP_WriteString(" M1"); break;
+    case PROGRAM_FLOW_COMPLETED : BSP_WriteString(" M2"); break;
+  }
+
+  switch (gcode.spindleDirection) {
+    case 1 : BSP_WriteString(" M3"); break;
+    case -1 : BSP_WriteString(" M4"); break;
+    case 0 : BSP_WriteString(" M5"); break;
+  }
+
+  switch (gcode.coolantMode) {
+    case COOLANT_DISABLE : BSP_WriteString(" M9"); break;
+    case COOLANT_FLOOD_ENABLE : BSP_WriteString(" M8"); break;
+    #ifdef ENABLE_M7
+      case COOLANT_MIST_ENABLE : BSP_WriteString(" M7"); break;
+    #endif
+  }
+
+  BSP_WriteString(" T");
+  printInteger(gcode.tool);
+
+  BSP_WriteString(" F");
+  if (gcode.inchesMode) { printFloat(gcode.feedRate*INCH_PER_MM); }
+  else { printFloat(gcode.feedRate); }
+
+  BSP_WriteString("]\r\n");
+}
+
+
+
+
+// Prints gcode coordinate offset parameters
+void report_gcode_parameters()
+{
+  float coord_data[N_AXIS];
+  uint8_t coord_select, i;
+  for (coord_select = 0; coord_select <= SETTING_INDEX_NCOORD; coord_select++)
+  {
+    if (!(settings_read_coord_data(coord_select,coord_data)))
+    {
+      report_status_message(STATUS_SETTING_READ_FAIL);
+      return;
+    }
+    BSP_WriteString("[G");
+    switch (coord_select) {
+      case 0: BSP_WriteString("54:"); break;
+      case 1: BSP_WriteString("55:"); break;
+      case 2: BSP_WriteString("56:"); break;
+      case 3: BSP_WriteString("57:"); break;
+      case 4: BSP_WriteString("58:"); break;
+      case 5: BSP_WriteString("59:"); break;
+      case 6: BSP_WriteString("28:"); break;
+      case 7: BSP_WriteString("30:"); break;
+      // case 8: BSP_WriteString("92:"); break; // G92.2, G92.3 not supported. Hence not stored.
+    }
+    for (i=0; i<N_AXIS; i++) {
+      if (bit_istrue(settings.flags,BITFLAG_REPORT_INCHES)) { printFloat(coord_data[i]*INCH_PER_MM); }
+      else { printFloat(coord_data[i]); }
+      if (i < (N_AXIS-1)) { BSP_WriteString(","); }
+      else { BSP_WriteString("]\r\n"); }
+    }
+  }
+  BSP_WriteString("[G92:"); // Print G92,G92.1 which are not persistent in memory
+  for (i=0; i<N_AXIS; i++) {
+    if (bit_istrue(settings.flags,BITFLAG_REPORT_INCHES)) { printFloat(gcode.coordOffset[i]*INCH_PER_MM); }
+    else { printFloat(gcode.coordOffset[i]); }
+    if (i < (N_AXIS-1)) { BSP_WriteString(","); }
+    else { BSP_WriteString("]\r\n"); }
+  }
+}
+
+
+// Prints specified startup line
+void report_startup_line(uint8_t n, char *line)
+{
+  BSP_WriteString("$N"); printInteger(n);
+  BSP_WriteString("="); BSP_WriteString(line);
+  BSP_WriteString("\r\n");
+}
+
+
+
+
+
+
+
+
 
 void print_uint8_base2(uint8_t n)
 {

@@ -182,9 +182,8 @@ void SYS_Initialize ( void* data )
     BSP_Initialize();
     INTConfigureSystem(INT_SYSTEM_CONFIG_MULT_VECTOR);
     INTEnableInterrupts();
-    BSP_WriteString("*** UART Interrupt-driven Application Example ***\r\n");
+    BSP_WriteString("*** Grbl  GRBL_VERSION  ['$' for help] ***\r\n");
     BSP_WriteString("*** Type some characters and observe echo ***\r\n");
-
 
     /* Initialize the Application */
     APP_Initialize ( );

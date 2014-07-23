@@ -128,7 +128,7 @@
 #define CMD_FEED_HOLD '!'
 #define CMD_CYCLE_START '~'
 #define CMD_RESET 0x18 // ctrl-x
-
+//#define REVISION '0.1'
 // The temporal resolution of the acceleration management subsystem. Higher number give smoother
 // acceleration but may impact performance.
 // NOTE: Increasing this parameter will help any resolution related issues, especially with machines

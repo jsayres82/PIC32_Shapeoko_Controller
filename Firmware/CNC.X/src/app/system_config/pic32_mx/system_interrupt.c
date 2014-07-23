@@ -122,135 +122,84 @@ void __ISR(_EXTERNAL_2_VECTOR, ipl1) _Interrupt_XY_Limit(void)
 
 void __ISR(_TIMER_4_VECTOR, ipl2) _InterruptHandler_TMR4(void)
 {
-    static uint32_t stepCount = 0;
-    if(!blockMoveActive)           // If we are Homing
+   
+    if(current_block->steps[Z_AXIS])
     {
-        if(!(mPORTAReadBits(zAxis.enablePin.pin)) && (steps_Z))
+        current_block->steps[Z_AXIS]--;
+        OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
+                                |OC_TIMER2_SRC|OC_SINGLE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());
+    }
+   else
+   {
+        BSP_AxisDisable(Z_AXIS);
+        BSP_Timer4Stop();
+        axisCompletedCount++;
+        if(axisCompletedCount >= current_block->activeAxisCount)
         {
-            steps_Z--;
-        }
-        else
-        {
-            BSP_AxisDisable(Z_AXIS);
-            BSP_Timer4Stop();
+            OpenCoreTimer(100);
+            //CloseCoreTimer();
+            //plan_discard_current_block();
+            //current_block = plan_get_current_block();
+           // blockMoveActive = FALSE;
+           // OpenCoreTimer(10);
         }
     }
-    else
-    {
-        if (current_block->steps[current_block->axisTimerOrder[TIMER4]] - stepCount)
-        {
-            stepCount++;
-        }
-       else
-       {
-            BSP_AxisDisable(Z_AXIS);
-            BSP_Timer4Stop();
-            axisCompletedCount++;
-            stepCount = 0;
-            if(current_block->activeAxisCount == axisCompletedCount)
-            {
-                plan_discard_current_block();
-                current_block = Null;
-                CloseCoreTimer();
-                blockMoveActive = FALSE;
-            }
-        }
-    }
+
 
     mT4ClearIntFlag();              // clear the interrupt flag
 }
 
 void __ISR(_TIMER_3_VECTOR, ipl2) _InterruptHandler_TMR3(void)
 {
-    static uint32_t stepCount = 0;
-    if(!blockMoveActive)
+
+    if(current_block->steps[Y_AXIS])
     {
-        if(!(mPORTGReadBits(xAxis.enablePin.pin)) && (steps_X))
-        {
-            steps_X--;
-        }
-        else
-        {
-            BSP_AxisDisable(X_AXIS);
-            BSP_Timer3Stop();
-        }
+           current_block->steps[Y_AXIS]--;
     }
     else
     {
-        if(current_block->steps[current_block->axisTimerOrder[TIMER3]] - stepCount)
+        BSP_AxisDisable(Y_AXIS);
+        BSP_Timer3Stop();
+        axisCompletedCount++;
+
+        if(axisCompletedCount >= current_block->activeAxisCount)
         {
-               stepCount++;
-        }
-        else
-        {
-            BSP_AxisDisable(current_block->axisTimerOrder[TIMER3]);
-            BSP_Timer3Stop();
-            axisCompletedCount++;
-            stepCount = 0;
-            if(current_block->activeAxisCount == axisCompletedCount)
-            {
-                plan_discard_current_block();
-                current_block = Null;
-                CloseCoreTimer();
-                blockMoveActive = FALSE;
-            }
+            OpenCoreTimer(100);
+            //CloseCoreTimer();
+            //plan_discard_current_block();
+           // current_block = plan_get_current_block();
+           // blockMoveActive = FALSE;
+           // OpenCoreTimer(10);
         }
     }
+    
      
     mT3ClearIntFlag();    // clear the interrupt flag
 }
 
 void __ISR(_TIMER_2_VECTOR, ipl2) _InterruptHandler_TMR2(void)
 {
-    static uint32_t stepCount = 0;
-    if(!blockMoveActive)
+
+    if(current_block->steps[current_block->axisTimerOrder[TIMER2]])
     {
-        if(!mPORTEReadBits(yAxis.enablePin.pin))
-        {
-            if(steps_Y)
-            {
-                steps_Y--;
-            }
-            else
-            {
-                BSP_AxisDisable(Y_AXIS);
-                BSP_Timer2Stop();
-            }
-        }
-        else if(!mPORTAReadBits(zAxis.enablePin.pin))
-        {
-            if(steps_Z)
-            {
-                steps_Z--;
-            }
-            else
-            {
-                BSP_AxisDisable(Z_AXIS);
-                BSP_Timer2Stop();
-            }
-        }
+            current_block->steps[current_block->axisTimerOrder[TIMER2]]--;
     }
     else
     {
-        if(current_block->steps[current_block->axisTimerOrder[TIMER2]] - stepCount)
+        BSP_AxisDisable(current_block->axisTimerOrder[TIMER2]);
+        BSP_Timer2Stop();
+        axisCompletedCount++;
+        if(axisCompletedCount >= current_block->activeAxisCount)
         {
-                stepCount++;
-        }
-        else
-        {
-            BSP_AxisDisable(current_block->axisTimerOrder[TIMER2]);
-            BSP_Timer2Stop();
-            axisCompletedCount++;
-            stepCount = 0;
-            if(current_block->activeAxisCount == axisCompletedCount)
-            {
-                plan_discard_current_block();
-                current_block = Null;
-                CloseCoreTimer();
-                blockMoveActive = FALSE;
-            }
+            OpenCoreTimer(100);
+            //CloseCoreTimer();
+            //plan_discard_current_block();
+            //current_block = plan_get_current_block();
+            //blockMoveActive = FALSE;
+            //OpenCoreTimer(10);
         }
     }
+    
          
      mT2ClearIntFlag();     // clear the interrupt flag
 }
@@ -278,6 +227,12 @@ void __ISR(_UART2_VECTOR, ipl2) IntUart2Handler(void)
       
       uart_rd = UARTGetDataByte(MY_UART);     /*uart_rd = data in the Uart Rx buffer */
       BSP_PutCharacter(uart_rd);
+//      switch (data) {
+//    case CMD_STATUS_REPORT: sys.execute |= EXEC_STATUS_REPORT; break; // Set as true
+//    case CMD_CYCLE_START:   sys.execute |= EXEC_CYCLE_START; break; // Set as true
+//    case CMD_FEED_HOLD:     sys.execute |= EXEC_FEED_HOLD; break; // Set as true
+//    case CMD_RESET:         mc_reset(); break; // Call motion control reset routine.
+//    default: // Write character to buffer
       rx_Fifo_Head++;        /* increase position in rx buffer */ 
       if (rx_Fifo_Head == RX_FIFO_LIMIT) /* check check for max position */ 
           rx_Fifo_Head = 0;             /* wrap back to first position in buffer */
@@ -307,8 +262,6 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
 {
 
     uint8_t i;
-    uint8_t axisOCConfig[N_AXIS];
-    uint32_t coreTimerCount;
 
     if(current_block != Null)       // If we just finished a block
         plan_discard_current_block();
@@ -335,6 +288,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                     OpenTimer2(current_block->timerConfig[i], current_block->timerPeriod[i]);
                     ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
                     mT2IntEnable(1);
+
                     break;
 
                 case Y_AXIS:
@@ -346,7 +300,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                     PORTClearBits(yAxis.enablePin.port, yAxis.enablePin.pin);
                     WritePeriod3(current_block->timerPeriod[i]);
                     OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER3_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2()); // Y_AXIS = Continuous Pulse
+                                |OC_TIMER3_SRC|OC_CONTINUE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3()); // Y_AXIS = Continuous Pulse
                     OpenTimer3(current_block->timerConfig[i], current_block->timerPeriod[i]);
                     ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
                     mT3IntEnable(1);
@@ -387,18 +341,11 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
             }
           }
         axisCompletedCount = 0;
-        blockMoveActive = TRUE;
 
-        UpdateCoreTimer(current_block->coreTimerTicks);        // update the period
-        coreTimerCount = ReadCoreTimer();
-        }
-
+    }
     else
     {
-        // Set a global flag to let main know we are waiting to recieve a new command
-        current_block = Null;
         CloseCoreTimer();
-        blockMoveActive = FALSE;
         // Disable the Timer
     }
 

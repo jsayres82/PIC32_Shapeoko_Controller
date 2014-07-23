@@ -46,7 +46,7 @@ static void select_plane(char axis_0, char axis_1, char axis_2)
 }
 void GcodeInit()
 {
-  //memset(&gcode, 0, sizeof(gcode));
+  memset(&gcode, 0, sizeof(gcode));
   gcode.inverseFeedRateMode = FALSE;
   gcode.feedRate = 250; //settings.default_feed_rate; // Should be zero at initialization.
 //  gc.seek_rate = settings.default_seek_rate;

@@ -16,6 +16,7 @@
           <itemPath>src/app/app_tasks/dee_emulation_pic32.h</itemPath>
           <itemPath>src/app/app_tasks/eeprom.h</itemPath>
           <itemPath>src/app/app_tasks/stepper.h</itemPath>
+          <itemPath>src/app/app_tasks/protocol.h</itemPath>
         </logicalFolder>
         <logicalFolder name="f1" displayName="system_config" projectFiles="true">
           <logicalFolder name="f1" displayName="pic32_mx" projectFiles="true">
@@ -50,6 +51,7 @@
             <itemPath>src/app/app_tasks/dee_emulation_pic32.c</itemPath>
             <itemPath>src/app/app_tasks/report.c</itemPath>
             <itemPath>src/app/app_tasks/stepper.c</itemPath>
+            <itemPath>src/app/app_tasks/protocol.c</itemPath>
           </logicalFolder>
           <logicalFolder name="f1" displayName="system_config" projectFiles="true">
             <logicalFolder name="f1" displayName="pic32_mx" projectFiles="true">

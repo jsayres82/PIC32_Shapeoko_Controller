@@ -339,6 +339,7 @@ void BSP_Timer1Start(uint16_t frequency)
     ConfigIntTimer1(T1_INT_ON | T1_INT_PRIOR_2);
     mT1IntEnable(1);
 }
+
 void BSP_Timer2Start(uint16_t frequency)
 {
     uint32_t ticks;

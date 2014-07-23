@@ -76,15 +76,7 @@ void SYS_Tasks ( void )
      * system.
      */
 
-    /* TODO: 040. PIC32MX - Call the task function, as needed, for all MPLAB
-     * Harmony modules in the system, including drivers, system services and
-     * middleware. If a module is not interrupt driven, its task function should
-     * be called here. The modules task function implements its state machine.
-     * Not every module has a task function. See the Module System Interaction
-     * Section section of the MPLABX Harmony Help.
-     */
-
-    /* Maintain the application's state machine. */
+   /* Maintain the application's state machine. */
     APP_Tasks ( );
 }
 

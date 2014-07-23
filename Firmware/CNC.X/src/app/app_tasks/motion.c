@@ -17,42 +17,41 @@
 
  void MotionLine(float X, float Y, float Z, float feed_rate, uint8_t invert_feed_rate)
  {
-    plan_buffer_line(X, Y, Z, 250.0 , invert_feed_rate);
-//    float  target[3];
-//    uint8_t xDirection = POSITIVE;
-//    uint8_t yDirection = POSITIVE;
-//    uint8_t zDirection = POSITIVE;
-//
-//
-//    target[X_AXIS] = lround((X)*settings.steps_per_mm[X_AXIS]);//*50800);  //steps per mm
-//    target[Y_AXIS] = lround((Y)*settings.steps_per_mm[Y_AXIS]);//*50800);  //steps per mm
-//    target[Z_AXIS] = lround((Z)*settings.steps_per_mm[Z_AXIS]);//*65024);  //steps per mm
-//
-//    // Number of steps for each axis
-//    steps_X = (uint32_t)(fabs(target[X_AXIS]-gcode.position[X_AXIS]));
-//    steps_Y = (uint32_t)(fabs(target[Y_AXIS]-gcode.position[Y_AXIS]));
-//    steps_Z = (uint32_t)(fabs(target[Z_AXIS]-gcode.position[Z_AXIS]));
-//
-//    // Compute direction bits
-//    if (target[X_AXIS] < gcode.position[X_AXIS])
-//        xDirection = NEGATIVE;
-//    if (target[Y_AXIS] < gcode.position[Y_AXIS])
-//        yDirection = NEGATIVE;
-//    if (target[Z_AXIS] < gcode.position[Z_AXIS])
-//        zDirection = NEGATIVE;
-    sys.state = STATE_QUEUED;
-    mEnableIntCoreTimer();
-    //Set the core timer to interrupt 25 nanoSeconds
-    OpenCoreTimer(1000);          // Trigger the core timer to get a block
+     // If in check gcode mode, prevent motion by blocking planner.
+     if (sys.state == STATE_CHECK_MODE) { return; }
 
-    
 
-    
-   // BSP_MoveAxis(X_AXIS, xDirection, ReadPeriod3()>>1);
-   // BSP_MoveAxis(Y_AXIS, yDirection, ReadPeriod2()>>1);
-    //BSP_MoveAxis(Z_AXIS, zDirection, ReadPeriod3());
-  // Bail if this is a zero-length task
-  //if (step_event_count == 0) { return; };
+     // If the buffer is full: good! That means we are well ahead of the robot.
+     // Remain in this loop until there is room in the buffer.
+     do
+     {
+         protocol_execute_runtime(); // Check for any run-time commands
+         if (sys.abort)
+            return;         // Bail, if system abort.
+     } while ( plan_check_full_buffer() );
+
+     plan_buffer_line(X, Y, Z, 250.0 , invert_feed_rate);
+     mEnableIntCoreTimer();
+     //Set the core timer to interrupt 25 nanoSeconds
+     OpenCoreTimer(1000);          // Trigger the core timer to get a block
+
+     // If idle, indicate to the system there is now a planned block in the buffer ready to cycle
+     // start. Otherwise ignore and continue on.
+     sys.state = STATE_QUEUED;
+
+
+
+
+     // Auto-cycle start immediately after planner finishes. Enabled/disabled by grbl settings. During
+     // a feed hold, auto-start is disabled momentarily until the cycle is resumed by the cycle-start
+     // runtime command.
+     // NOTE: This is allows the user to decide to exclusively use the cycle start runtime command to
+     // begin motion or let grbl auto-start it for them. This is useful when: manually cycle-starting
+     // when the buffer is completely full and primed; auto-starting, if there was only one g-code
+     // command sent during manual operation; or if a system is prone to buffer starvation, auto-start
+     // helps make sure it minimizes any dwelling/motion hiccups and keeps the cycle going.
+     if (sys.auto_start) { st_cycle_start(); }
+ 
 
  }
 
@@ -201,15 +200,14 @@ void MotionGoHome(void)
     plan_init();
     uint16_t limitStatus;
     uint16_t stepCount;
-  sys.state = STATE_HOMING; // Set system state variable
- // LIMIT_PCMSK &= ~LIMIT_MASK; // Disable hard limits pin change register for cycle duration
+    sys.state = STATE_HOMING; // Set system state variable
 
     xLimitDetected = FALSE;
     yLimitDetected = FALSE;
 
     BSP_SetStepSize(X_AXIS, QUARTER);
     BSP_SetStepSize(Y_AXIS, QUARTER);
-    BSP_SetStepSize(Z_AXIS, QUARTER);
+    BSP_SetStepSize(Z_AXIS, FULL);
     settings.steps_per_mm[X_AXIS] = X_STEPS_MM(QUARTER_STEP);
     settings.steps_per_mm[Y_AXIS] = Y_STEPS_MM(QUARTER_STEP);
     settings.steps_per_mm[Z_AXIS] = Z_STEPS_MM(QUARTER_STEP);
@@ -259,11 +257,13 @@ void MotionGoHome(void)
     else
     {
         steps_Y = 0xFFFFFFFF;
-        BSP_Timer2Start(250);
+        BSP_Timer2Start(100);
+        ConfigIntTimer2(T2_INT_OFF);
         OpenOC1(YZ_PWM_ENA, (ReadPeriod2()>>1), ReadPeriod2());
         BSP_AxisEnable(Y_AXIS, NEGATIVE);
         while(!(yLimitDetected)){};
         BSP_Timer2Start(10);
+        ConfigIntTimer2(T2_INT_OFF);
         OpenOC1(YZ_PWM_ENA, (ReadPeriod2()>>1), ReadPeriod2());
 
         while((mPORTCReadBits(yLimitInput.pin)))
@@ -277,11 +277,13 @@ void MotionGoHome(void)
 
 
         steps_X = 0xFFFFFFFF;
-        BSP_Timer3Start(250);
+        BSP_Timer3Start(100);
+        ConfigIntTimer3(T3_INT_OFF);
         OpenOC2(XS_PWM_ENA,  (ReadPeriod3()>>1), ReadPeriod3());
         BSP_AxisEnable(X_AXIS, NEGATIVE);
         while(!(xLimitDetected)){};
         BSP_Timer3Start(10);
+        ConfigIntTimer3(T3_INT_OFF);
         OpenOC2(XS_PWM_ENA,  (ReadPeriod3()>>1), ReadPeriod3());
         while((mPORTCReadBits(xLimitInput.pin)))
         {
@@ -311,38 +313,6 @@ void MotionGoHome(void)
 
        
     }
-//    steps_X = 0xFFFFFFFF;
-//    BSP_Timer3Start(1500);
-//    OpenOC2(XS_PWM_ENA,  (ReadPeriod3()), ReadPeriod3());
-//    BSP_AxisEnable(X_AXIS, NEGATIVE);
-//    while(!(xLimitDetected)){};
-//    BSP_Timer3Start(100);
-//    OpenOC2(XS_PWM_ENA,  (ReadPeriod3()), ReadPeriod3());
-//    gcode.position[X_AXIS] = 0;
-//    while((mPORTCReadBits(xLimitInput.pin)))
-//    {
-//        steps_X = 0x1;
-//        BSP_AxisEnable(X_AXIS, POSITIVE);
-//    }
-//    BSP_AxisDisable(X_AXIS);
-//
-//
-//    steps_Y = 0xFFFFFFFF;
-//    BSP_Timer2Start(1500);
-//    OpenOC1(YZ_PWM_ENA, (ReadPeriod2()), ReadPeriod2());
-//    BSP_AxisEnable(Y_AXIS, NEGATIVE);
-//    while(!(yLimitDetected)){};
-//    BSP_Timer2Start(100);
-//    OpenOC1(YZ_PWM_ENA, (ReadPeriod2()), ReadPeriod2());
-//    gcode.position[Y_AXIS] = 0;
-//    while((mPORTCReadBits(yLimitInput.pin)))
-//    {
-//        steps_Y = 0x1;
-//        BSP_AxisEnable(Y_AXIS, POSITIVE);
-//    }
-//    BSP_AxisDisable(Y_AXIS);
-//
-//    gcode.position[Z_AXIS] = 0;
 
   protocol_execute_runtime(); // Check for reset and set system abort.
   if (sys.abort) { return; } // Did not complete. Alarm state set by mc_alarm.

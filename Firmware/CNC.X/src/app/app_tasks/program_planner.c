@@ -365,7 +365,7 @@ void plan_buffer_line(float X, float Y, float Z, float feed_rate, uint8_t invert
 
   // Bail if this is a zero-length block
   if (block->step_event_count == 0) { return; };
-
+  block->activeAxisCount = 0;
   if(block->steps[X_AXIS])
   {
       block->axisTimerOrder[block->activeAxisCount] = X_AXIS;
@@ -404,16 +404,14 @@ void plan_buffer_line(float X, float Y, float Z, float feed_rate, uint8_t invert
   {
     inverse_minute = 1.0 / feed_rate;
   }
-  block->coreTimerTicks = (((uint32_t)((1/inverse_minute)*60))*40000000);            // In Seconds
+        // In Seconds
 
-  block->steppingFreq[Y_AXIS] = ceil(block->steps[Y_AXIS] / (60/inverse_minute));
-  block->steppingFreq[X_AXIS] = ceil(block->steps[X_AXIS] / (60/inverse_minute));
-  block->steppingFreq[Z_AXIS] = ceil(block->steps[Z_AXIS] / (60/inverse_minute));
+  block->steppingFreq[Y_AXIS] = ceil(block->steps[Y_AXIS] * inverse_minute/60);
+  block->steppingFreq[X_AXIS] = ceil(block->steps[X_AXIS] * inverse_minute/60);
+  block->steppingFreq[Z_AXIS] = ceil(block->steps[Z_AXIS] * inverse_minute/60);
   block->nominal_speed = block->millimeters * inverse_minute; // (mm/min) Always > 0
   block->nominal_rate = ceil(block->step_event_count * inverse_minute); // (step/min) Always > 0
-  
-  block->numberOfTimers = timerCount;
-
+ 
   for(i = 0; i < block->activeAxisCount; i++)
   {
       j = ((uint32_t)(GetPeripheralClock()/block->steppingFreq[block->axisTimerOrder[i]]));
