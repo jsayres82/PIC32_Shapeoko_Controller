@@ -366,7 +366,9 @@ void plan_buffer_line(float X, float Y, float Z, float feed_rate, uint8_t invert
 
   // Bail if this is a zero-length block
   if (block->step_event_count == 0) { return; };
+
   block->activeAxisCount = 0;
+
   if(block->steps[X_AXIS])
   {
       block->axisTimerOrder[block->activeAxisCount] = X_AXIS;
@@ -472,7 +474,10 @@ void plan_buffer_line(float X, float Y, float Z, float feed_rate, uint8_t invert
       }
     for(i = 0; i < block->activeAxisCount; i++)
     {
-      block->timerPeriod[block->axisTimerOrder[i]] = ((uint32_t)(GetPeripheralClock()/block->steppingFreq[block->axisTimerOrder[i]]))/maxPreScaler;
+        if(maxPreScaler)
+            block->timerPeriod[block->axisTimerOrder[i]] = ((uint32_t)(GetPeripheralClock()/block->steppingFreq[block->axisTimerOrder[i]]))/maxPreScaler;
+        else
+            block->timerPeriod[block->axisTimerOrder[i]] = ((uint32_t)(GetPeripheralClock()/block->steppingFreq[block->axisTimerOrder[i]]));
     }
 
 

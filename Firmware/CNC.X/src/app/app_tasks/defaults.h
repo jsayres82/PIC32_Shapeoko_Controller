@@ -28,7 +28,7 @@ extern "C" {
 #define SIXTEENTH_STEP 16
 
 
-#define Z_MOTOR_RES 400
+#define Z_MOTOR_RES 200
 #define LEAD_SCREW_RES 1.250  //mm
 
 #define X_MOTOR_RES 200 //200 steps per revolution (1.8 degree)

@@ -69,6 +69,7 @@ uint8_t timer2AxisCount;
 uint8_t timer3AxisCount;
 uint8_t timer4AxisCount;
 uint8_t axisCompletedCount;
+bool zAxisStep = FALSE;
 // *****************************************************************************
 // *****************************************************************************
 // Section: System Interrupt Vector Functions
@@ -126,26 +127,14 @@ void __ISR(_TIMER_4_VECTOR, ipl2) _InterruptHandler_TMR4(void)
     if(current_block->steps[Z_AXIS])
     {
         current_block->steps[Z_AXIS]--;
-        OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_SINGLE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());
+        zAxisStep = TRUE;
+        
     }
    else
    {
         BSP_AxisDisable(Z_AXIS);
         BSP_Timer4Stop();
-        axisCompletedCount++;
-        if(axisCompletedCount >= current_block->activeAxisCount)
-        {
-            OpenCoreTimer(100);
-            //CloseCoreTimer();
-            //plan_discard_current_block();
-            //current_block = plan_get_current_block();
-           // blockMoveActive = FALSE;
-           // OpenCoreTimer(10);
-        }
     }
-
-
     mT4ClearIntFlag();              // clear the interrupt flag
 }
 
@@ -179,14 +168,28 @@ void __ISR(_TIMER_3_VECTOR, ipl2) _InterruptHandler_TMR3(void)
 
 void __ISR(_TIMER_2_VECTOR, ipl2) _InterruptHandler_TMR2(void)
 {
-
-    if(current_block->steps[current_block->axisTimerOrder[TIMER2]])
+    if(zAxisStep)
     {
-            current_block->steps[current_block->axisTimerOrder[TIMER2]]--;
+        zAxisStep = FALSE;
+        OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
+                                |OC_TIMER2_SRC|OC_SINGLE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());
+    }
+
+    if(current_block->steps[X_AXIS])
+    {
+        current_block->steps[X_AXIS]--;
+    }
+    else if(current_block->steps[Z_AXIS])
+    {
+        if(current_block->axisTimerOrder[0] == X_AXIS)
+        {
+            BSP_AxisDisable(X_AXIS);
+            axisCompletedCount++;
+        }
     }
     else
     {
-        BSP_AxisDisable(current_block->axisTimerOrder[TIMER2]);
+        BSP_AxisDisable(X_AXIS);
         BSP_Timer2Stop();
         axisCompletedCount++;
         if(axisCompletedCount >= current_block->activeAxisCount)
@@ -281,11 +284,11 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
 
                     PORTClearBits(xAxis.enablePin.port, xAxis.enablePin.pin);
 
-                    WritePeriod2(current_block->timerPeriod[i]);
+                    WritePeriod2(current_block->timerPeriod[X_AXIS]);
                     OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
                                 |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());   // X_AXIS = Single Pulse
 
-                    OpenTimer2(current_block->timerConfig, current_block->timerPeriod[i]);
+                    OpenTimer2(current_block->timerConfig, current_block->timerPeriod[X_AXIS]);
                     ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
                     mT2IntEnable(1);
 
@@ -298,10 +301,11 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                         PORTClearBits(yAxis.directionPin.port, yAxis.directionPin.pin);
 
                     PORTClearBits(yAxis.enablePin.port, yAxis.enablePin.pin);
-                    WritePeriod3(current_block->timerPeriod[i]);
+                    
+                    WritePeriod3(current_block->timerPeriod[Y_AXIS]);
                     OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
                                 |OC_TIMER3_SRC|OC_CONTINUE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3()); // Y_AXIS = Continuous Pulse
-                    OpenTimer3(current_block->timerConfig, current_block->timerPeriod[i]);
+                    OpenTimer3(current_block->timerConfig, current_block->timerPeriod[Y_AXIS]);
                     ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
                     mT3IntEnable(1);
                     break;
@@ -313,26 +317,22 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                         PORTClearBits(zAxis.directionPin.port, zAxis.directionPin.pin);
 
                     PORTClearBits(zAxis.enablePin.port, zAxis.enablePin.pin);
+
                     if(!current_block->steps[X_AXIS])                   // If x axis is not active
                     {
-                        WritePeriod2(current_block->timerPeriod[i]);        // Use timer 2 for Z movements
-                        OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());    // Z_AXIS = Single Pulse
-                                
-                        OpenTimer2(current_block->timerConfig, current_block->timerPeriod[i]);
+                        WritePeriod2(current_block->timerPeriod[Z_AXIS]);
+                        OpenTimer2(current_block->timerConfig, current_block->timerPeriod[Z_AXIS]);
                         ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
                         mT2IntEnable(1);
                     }
-                    else        // X Axis is active
-                    {
+                    WritePeriod4(current_block->timerPeriod[Z_AXIS]);
+                    OpenTimer4(current_block->timerConfig, current_block->timerPeriod[Z_AXIS]);
+                    //OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
+                    //        |OC_TIMER2_SRC|OC_SINGLE_PULSE),  (ReadPeriod4()>>1), ReadPeriod4());    // Z_AXIS = Single Pulse
 
-                        WritePeriod4(current_block->timerPeriod[i]);
-                        OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
-                                |OC_TIMER2_SRC|OC_SINGLE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());    // Z_AXIS = Single Pulse
-                        OpenTimer4(current_block->timerConfig, current_block->timerPeriod[i]);
-                        ConfigIntTimer4(T4_INT_ON | T4_INT_PRIOR_2);
-                        mT4IntEnable(1);
-                    }
+                    ConfigIntTimer4(T4_INT_ON | T4_INT_PRIOR_2);
+                    mT4IntEnable(1);
+
 
                     break;
 

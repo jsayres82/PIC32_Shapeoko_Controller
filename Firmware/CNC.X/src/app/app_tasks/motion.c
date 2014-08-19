@@ -210,7 +210,7 @@ void MotionGoHome(void)
     BSP_SetStepSize(Z_AXIS, FULL);
     settings.steps_per_mm[X_AXIS] = X_STEPS_MM(QUARTER_STEP);
     settings.steps_per_mm[Y_AXIS] = Y_STEPS_MM(QUARTER_STEP);
-    settings.steps_per_mm[Z_AXIS] = Z_STEPS_MM(QUARTER_STEP);
+    settings.steps_per_mm[Z_AXIS] = Z_STEPS_MM(FULL_STEP);
     // Find out if X or Y axis are at limit
     limitStatus = mPORTCReadBits(xLimitInput.pin||yLimitInput.pin);
 
