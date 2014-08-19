@@ -422,7 +422,7 @@ void plan_buffer_line(float X, float Y, float Z, float feed_rate, uint8_t invert
   }
       j = ((uint32_t)(GetPeripheralClock()/minStepFreq));
 
-      if(j <= 0xFFFF)
+      if(j <= 0xFFFF)  // tesst
       {
           block->timerConfig=(T2_ON| T2_SOURCE_INT|T2_PS_1_1);
 
