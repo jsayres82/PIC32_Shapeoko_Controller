@@ -285,7 +285,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                     OpenOC2((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
                                 |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());   // X_AXIS = Single Pulse
 
-                    OpenTimer2(current_block->timerConfig[i], current_block->timerPeriod[i]);
+                    OpenTimer2(current_block->timerConfig, current_block->timerPeriod[i]);
                     ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
                     mT2IntEnable(1);
 
@@ -301,7 +301,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                     WritePeriod3(current_block->timerPeriod[i]);
                     OpenOC1((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
                                 |OC_TIMER3_SRC|OC_CONTINUE_PULSE),  (ReadPeriod3()>>1), ReadPeriod3()); // Y_AXIS = Continuous Pulse
-                    OpenTimer3(current_block->timerConfig[i], current_block->timerPeriod[i]);
+                    OpenTimer3(current_block->timerConfig, current_block->timerPeriod[i]);
                     ConfigIntTimer3(T3_INT_ON | T3_INT_PRIOR_2);
                     mT3IntEnable(1);
                     break;
@@ -319,7 +319,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                         OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
                                 |OC_TIMER2_SRC|OC_CONTINUE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());    // Z_AXIS = Single Pulse
                                 
-                        OpenTimer2(current_block->timerConfig[i], current_block->timerPeriod[i]);
+                        OpenTimer2(current_block->timerConfig, current_block->timerPeriod[i]);
                         ConfigIntTimer2(T2_INT_ON | T2_INT_PRIOR_2);
                         mT2IntEnable(1);
                     }
@@ -329,7 +329,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl2) CoreTimerHandler(void)
                         WritePeriod4(current_block->timerPeriod[i]);
                         OpenOC3((OC_ON|OC_IDLE_STOP|OC_TIMER_MODE16 \
                                 |OC_TIMER2_SRC|OC_SINGLE_PULSE),  (ReadPeriod2()>>1), ReadPeriod2());    // Z_AXIS = Single Pulse
-                        OpenTimer4(current_block->timerConfig[i], current_block->timerPeriod[i]);
+                        OpenTimer4(current_block->timerConfig, current_block->timerPeriod[i]);
                         ConfigIntTimer4(T4_INT_ON | T4_INT_PRIOR_2);
                         mT4IntEnable(1);
                     }

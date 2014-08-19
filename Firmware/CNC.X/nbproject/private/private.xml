@@ -4,5 +4,9 @@
             <url>src/app/app_tasks/g_code.c</url>
             <line>480</line>
         </file>
+        <file>
+            <url>src/app/system_config/pic32_mx/system_init.c</url>
+            <line>171</line>
+        </file>
     </editor-bookmarks>
 </project-private>

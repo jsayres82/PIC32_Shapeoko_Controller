@@ -342,7 +342,8 @@ void plan_buffer_line(float X, float Y, float Z, float feed_rate, uint8_t invert
   uint8_t timerCount = 0;
   // Calculate target position in absolute steps
   int32_t target[N_AXIS];
-
+  uint32_t minStepFreq;
+  uint32_t maxPreScaler;
 
   target[X_AXIS] = lround(X*settings.steps_per_mm[X_AXIS]);//*50800);  //steps per mm
   target[Y_AXIS] = lround(Y*settings.steps_per_mm[Y_AXIS]);//*50800);  //steps per mm
@@ -406,56 +407,72 @@ void plan_buffer_line(float X, float Y, float Z, float feed_rate, uint8_t invert
   }
         // In Seconds
 
-  block->steppingFreq[Y_AXIS] = ceil(block->steps[Y_AXIS] * inverse_minute/60);
-  block->steppingFreq[X_AXIS] = ceil(block->steps[X_AXIS] * inverse_minute/60);
-  block->steppingFreq[Z_AXIS] = ceil(block->steps[Z_AXIS] * inverse_minute/60);
+  
   block->nominal_speed = block->millimeters * inverse_minute; // (mm/min) Always > 0
   block->nominal_rate = ceil(block->step_event_count * inverse_minute); // (step/min) Always > 0
- 
+
+  block->steppingFreq[Y_AXIS] = ceil((float)(block->steps[Y_AXIS]/(float)block->step_event_count) * block->nominal_rate/60.0f);
+  block->steppingFreq[X_AXIS] = ceil((float)(block->steps[X_AXIS]/(float)block->step_event_count) * block->nominal_rate/60.0f);
+  block->steppingFreq[Z_AXIS] = ceil((float)(block->steps[Z_AXIS]/(float)block->step_event_count) * block->nominal_rate/60.0f);
+  
   for(i = 0; i < block->activeAxisCount; i++)
   {
-      j = ((uint32_t)(GetPeripheralClock()/block->steppingFreq[block->axisTimerOrder[i]]));
+      if(!i || (minStepFreq > block->steppingFreq[block->axisTimerOrder[i]]))
+          minStepFreq =  block->steppingFreq[block->axisTimerOrder[i]];
+  }
+      j = ((uint32_t)(GetPeripheralClock()/minStepFreq));
 
       if(j <= 0xFFFF)
       {
-          block->timerConfig[i]=(T2_ON| T2_SOURCE_INT|T2_PS_1_1);
-          block->timerPeriod[i] = (uint16_t)j;
+          block->timerConfig=(T2_ON| T2_SOURCE_INT|T2_PS_1_1);
+
+          maxPreScaler = T2_PS_1_1;
       }
       else if((j >> 1)<= 0xFFFF)
       {
-          block->timerConfig[i] =(T2_ON| T2_SOURCE_INT|T2_PS_1_2);
-          block->timerPeriod[i] = T2_PS_1_2*(uint16_t)j;
+          block->timerConfig =(T2_ON| T2_SOURCE_INT|T2_PS_1_2);
+
+          maxPreScaler = T2_PS_1_2;
       }
       else if((j >> 2)<= 0xFFFF)
       {
-          block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_4);
-          block->timerPeriod[i] =  T2_PS_1_4*(uint16_t)j;
+          block->timerConfig = (T2_ON| T2_SOURCE_INT|T2_PS_1_4);
+
+          maxPreScaler = T2_PS_1_4;
       }
       else if((j >> 3)<= 0xFFFF)
       {
-          block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_8);
-          block->timerPeriod[i] = T2_PS_1_8*(uint16_t)j;
+          block->timerConfig = (T2_ON| T2_SOURCE_INT|T2_PS_1_8);
+
+          maxPreScaler = T2_PS_1_8;
       }
       else if((j >> 4)<= 0xFFFF)
       {
-          block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_16);
-          block->timerPeriod[i] = T2_PS_1_16*(uint16_t)j;
+          block->timerConfig = (T2_ON| T2_SOURCE_INT|T2_PS_1_16);
+
+          maxPreScaler = T2_PS_1_16;
       }
       else if((j >> 5)<= 0xFFFF)
       {
-          block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_32);
-          block->timerPeriod[i] = T2_PS_1_32*(uint16_t)j;
+          block->timerConfig = (T2_ON| T2_SOURCE_INT|T2_PS_1_32);
+
+          maxPreScaler = T2_PS_1_32;
       }
       else if((j >> 6)<= 0xFFFF)
       {
-          block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_64);
-          block->timerPeriod[i] = T2_PS_1_64*(uint16_t)j;
+          block->timerConfig = (T2_ON| T2_SOURCE_INT|T2_PS_1_64);
+
+          maxPreScaler = T2_PS_1_64;
       }
       else
       {
-         block->timerConfig[i] = (T2_ON| T2_SOURCE_INT|T2_PS_1_256);
-         block->timerPeriod[i] = T2_PS_1_256*(uint16_t)j;
+         block->timerConfig = (T2_ON| T2_SOURCE_INT|T2_PS_1_256);
+
+         maxPreScaler = T2_PS_1_256;
       }
+    for(i = 0; i < block->activeAxisCount; i++)
+    {
+      block->timerPeriod[block->axisTimerOrder[i]] = ((uint32_t)(GetPeripheralClock()/block->steppingFreq[block->axisTimerOrder[i]]))/maxPreScaler;
     }
 
 

@@ -30,7 +30,7 @@ typedef struct {
   int32_t  step_event_count;                 // The number of step events required to complete this block
   uint8_t activeAxisCount;                   // The number of axis that are required to move for the block                     
   uint8_t axisTimerOrder[N_AXIS];
-  uint16_t timerConfig[N_AXIS];
+  uint16_t timerConfig;
   uint16_t timerPeriod[N_AXIS];
   bool direction_bits[N_AXIS];            // The direction bit set for this block (refers to *_DIRECTION_BIT in config.h)
   // Fields used by the motion planner to manage acceleration

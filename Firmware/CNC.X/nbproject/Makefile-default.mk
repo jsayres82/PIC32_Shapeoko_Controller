@@ -45,17 +45,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=src/app/app_tasks/program_planner.c src/app/app_tasks/g_code.c src/app/app_tasks/motion.c src/app/app_tasks/nuts_bolts.c src/app/app_tasks/settings.c src/app/app_tasks/eeprom.c src/app/app_tasks/dee_emulation_pic32.c src/app/app_tasks/report.c src/app/app_tasks/stepper.c src/app/system_config/pic32_mx/system_init.c src/app/system_config/pic32_mx/system_interrupt.c src/app/system_config/pic32_mx/system_task.c src/app/main.c src/app/app.c src/bsp/cnc_rev_00/bsp_sys_init.c src/app/app_tasks/protocol.c
+SOURCEFILES_QUOTED_IF_SPACED=src/app/app_tasks/program_planner.c src/app/app_tasks/g_code.c src/app/app_tasks/motion.c src/app/app_tasks/nuts_bolts.c src/app/app_tasks/settings.c src/app/app_tasks/eeprom.c src/app/app_tasks/dee_emulation_pic32.c src/app/app_tasks/report.c src/app/app_tasks/stepper.c src/app/app_tasks/protocol.c src/app/system_config/pic32_mx/system_init.c src/app/system_config/pic32_mx/system_interrupt.c src/app/system_config/pic32_mx/system_task.c src/app/main.c src/app/app.c src/bsp/cnc_rev_00/bsp_sys_init.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/src/app/app_tasks/program_planner.o ${OBJECTDIR}/src/app/app_tasks/g_code.o ${OBJECTDIR}/src/app/app_tasks/motion.o ${OBJECTDIR}/src/app/app_tasks/nuts_bolts.o ${OBJECTDIR}/src/app/app_tasks/settings.o ${OBJECTDIR}/src/app/app_tasks/eeprom.o ${OBJECTDIR}/src/app/app_tasks/dee_emulation_pic32.o ${OBJECTDIR}/src/app/app_tasks/report.o ${OBJECTDIR}/src/app/app_tasks/stepper.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_init.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_interrupt.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_task.o ${OBJECTDIR}/src/app/main.o ${OBJECTDIR}/src/app/app.o ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o ${OBJECTDIR}/src/app/app_tasks/protocol.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/src/app/app_tasks/program_planner.o.d ${OBJECTDIR}/src/app/app_tasks/g_code.o.d ${OBJECTDIR}/src/app/app_tasks/motion.o.d ${OBJECTDIR}/src/app/app_tasks/nuts_bolts.o.d ${OBJECTDIR}/src/app/app_tasks/settings.o.d ${OBJECTDIR}/src/app/app_tasks/eeprom.o.d ${OBJECTDIR}/src/app/app_tasks/dee_emulation_pic32.o.d ${OBJECTDIR}/src/app/app_tasks/report.o.d ${OBJECTDIR}/src/app/app_tasks/stepper.o.d ${OBJECTDIR}/src/app/system_config/pic32_mx/system_init.o.d ${OBJECTDIR}/src/app/system_config/pic32_mx/system_interrupt.o.d ${OBJECTDIR}/src/app/system_config/pic32_mx/system_task.o.d ${OBJECTDIR}/src/app/main.o.d ${OBJECTDIR}/src/app/app.o.d ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o.d ${OBJECTDIR}/src/app/app_tasks/protocol.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/src/app/app_tasks/program_planner.o ${OBJECTDIR}/src/app/app_tasks/g_code.o ${OBJECTDIR}/src/app/app_tasks/motion.o ${OBJECTDIR}/src/app/app_tasks/nuts_bolts.o ${OBJECTDIR}/src/app/app_tasks/settings.o ${OBJECTDIR}/src/app/app_tasks/eeprom.o ${OBJECTDIR}/src/app/app_tasks/dee_emulation_pic32.o ${OBJECTDIR}/src/app/app_tasks/report.o ${OBJECTDIR}/src/app/app_tasks/stepper.o ${OBJECTDIR}/src/app/app_tasks/protocol.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_init.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_interrupt.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_task.o ${OBJECTDIR}/src/app/main.o ${OBJECTDIR}/src/app/app.o ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/src/app/app_tasks/program_planner.o.d ${OBJECTDIR}/src/app/app_tasks/g_code.o.d ${OBJECTDIR}/src/app/app_tasks/motion.o.d ${OBJECTDIR}/src/app/app_tasks/nuts_bolts.o.d ${OBJECTDIR}/src/app/app_tasks/settings.o.d ${OBJECTDIR}/src/app/app_tasks/eeprom.o.d ${OBJECTDIR}/src/app/app_tasks/dee_emulation_pic32.o.d ${OBJECTDIR}/src/app/app_tasks/report.o.d ${OBJECTDIR}/src/app/app_tasks/stepper.o.d ${OBJECTDIR}/src/app/app_tasks/protocol.o.d ${OBJECTDIR}/src/app/system_config/pic32_mx/system_init.o.d ${OBJECTDIR}/src/app/system_config/pic32_mx/system_interrupt.o.d ${OBJECTDIR}/src/app/system_config/pic32_mx/system_task.o.d ${OBJECTDIR}/src/app/main.o.d ${OBJECTDIR}/src/app/app.o.d ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/src/app/app_tasks/program_planner.o ${OBJECTDIR}/src/app/app_tasks/g_code.o ${OBJECTDIR}/src/app/app_tasks/motion.o ${OBJECTDIR}/src/app/app_tasks/nuts_bolts.o ${OBJECTDIR}/src/app/app_tasks/settings.o ${OBJECTDIR}/src/app/app_tasks/eeprom.o ${OBJECTDIR}/src/app/app_tasks/dee_emulation_pic32.o ${OBJECTDIR}/src/app/app_tasks/report.o ${OBJECTDIR}/src/app/app_tasks/stepper.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_init.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_interrupt.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_task.o ${OBJECTDIR}/src/app/main.o ${OBJECTDIR}/src/app/app.o ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o ${OBJECTDIR}/src/app/app_tasks/protocol.o
+OBJECTFILES=${OBJECTDIR}/src/app/app_tasks/program_planner.o ${OBJECTDIR}/src/app/app_tasks/g_code.o ${OBJECTDIR}/src/app/app_tasks/motion.o ${OBJECTDIR}/src/app/app_tasks/nuts_bolts.o ${OBJECTDIR}/src/app/app_tasks/settings.o ${OBJECTDIR}/src/app/app_tasks/eeprom.o ${OBJECTDIR}/src/app/app_tasks/dee_emulation_pic32.o ${OBJECTDIR}/src/app/app_tasks/report.o ${OBJECTDIR}/src/app/app_tasks/stepper.o ${OBJECTDIR}/src/app/app_tasks/protocol.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_init.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_interrupt.o ${OBJECTDIR}/src/app/system_config/pic32_mx/system_task.o ${OBJECTDIR}/src/app/main.o ${OBJECTDIR}/src/app/app.o ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o
 
 # Source Files
-SOURCEFILES=src/app/app_tasks/program_planner.c src/app/app_tasks/g_code.c src/app/app_tasks/motion.c src/app/app_tasks/nuts_bolts.c src/app/app_tasks/settings.c src/app/app_tasks/eeprom.c src/app/app_tasks/dee_emulation_pic32.c src/app/app_tasks/report.c src/app/app_tasks/stepper.c src/app/system_config/pic32_mx/system_init.c src/app/system_config/pic32_mx/system_interrupt.c src/app/system_config/pic32_mx/system_task.c src/app/main.c src/app/app.c src/bsp/cnc_rev_00/bsp_sys_init.c src/app/app_tasks/protocol.c
+SOURCEFILES=src/app/app_tasks/program_planner.c src/app/app_tasks/g_code.c src/app/app_tasks/motion.c src/app/app_tasks/nuts_bolts.c src/app/app_tasks/settings.c src/app/app_tasks/eeprom.c src/app/app_tasks/dee_emulation_pic32.c src/app/app_tasks/report.c src/app/app_tasks/stepper.c src/app/app_tasks/protocol.c src/app/system_config/pic32_mx/system_init.c src/app/system_config/pic32_mx/system_interrupt.c src/app/system_config/pic32_mx/system_task.c src/app/main.c src/app/app.c src/bsp/cnc_rev_00/bsp_sys_init.c
 
 
 CFLAGS=
@@ -145,6 +145,12 @@ ${OBJECTDIR}/src/app/app_tasks/stepper.o: src/app/app_tasks/stepper.c  nbproject
 	@${RM} ${OBJECTDIR}/src/app/app_tasks/stepper.o 
 	@${FIXDEPS} "${OBJECTDIR}/src/app/app_tasks/stepper.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"src" -I"src/app" -I"src/bsp" -I"src/bsp/cnc_rev_00" -I"src/app/system_config" -I"src/app/system_config/pic32_mx" -I"../../../../../../microchip/xc32/v1.31/pic32-libs/peripheral" -I"src/app/app_tasks" -MMD -MF "${OBJECTDIR}/src/app/app_tasks/stepper.o.d" -o ${OBJECTDIR}/src/app/app_tasks/stepper.o src/app/app_tasks/stepper.c   
 	
+${OBJECTDIR}/src/app/app_tasks/protocol.o: src/app/app_tasks/protocol.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} ${OBJECTDIR}/src/app/app_tasks 
+	@${RM} ${OBJECTDIR}/src/app/app_tasks/protocol.o.d 
+	@${RM} ${OBJECTDIR}/src/app/app_tasks/protocol.o 
+	@${FIXDEPS} "${OBJECTDIR}/src/app/app_tasks/protocol.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"src" -I"src/app" -I"src/bsp" -I"src/bsp/cnc_rev_00" -I"src/app/system_config" -I"src/app/system_config/pic32_mx" -I"../../../../../../microchip/xc32/v1.31/pic32-libs/peripheral" -I"src/app/app_tasks" -MMD -MF "${OBJECTDIR}/src/app/app_tasks/protocol.o.d" -o ${OBJECTDIR}/src/app/app_tasks/protocol.o src/app/app_tasks/protocol.c   
+	
 ${OBJECTDIR}/src/app/system_config/pic32_mx/system_init.o: src/app/system_config/pic32_mx/system_init.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} ${OBJECTDIR}/src/app/system_config/pic32_mx 
 	@${RM} ${OBJECTDIR}/src/app/system_config/pic32_mx/system_init.o.d 
@@ -180,12 +186,6 @@ ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o: src/bsp/cnc_rev_00/bsp_sys_init.
 	@${RM} ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o.d 
 	@${RM} ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o 
 	@${FIXDEPS} "${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"src" -I"src/app" -I"src/bsp" -I"src/bsp/cnc_rev_00" -I"src/app/system_config" -I"src/app/system_config/pic32_mx" -I"../../../../../../microchip/xc32/v1.31/pic32-libs/peripheral" -I"src/app/app_tasks" -MMD -MF "${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o.d" -o ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o src/bsp/cnc_rev_00/bsp_sys_init.c   
-	
-${OBJECTDIR}/src/app/app_tasks/protocol.o: src/app/app_tasks/protocol.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} ${OBJECTDIR}/src/app/app_tasks 
-	@${RM} ${OBJECTDIR}/src/app/app_tasks/protocol.o.d 
-	@${RM} ${OBJECTDIR}/src/app/app_tasks/protocol.o 
-	@${FIXDEPS} "${OBJECTDIR}/src/app/app_tasks/protocol.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"src" -I"src/app" -I"src/bsp" -I"src/bsp/cnc_rev_00" -I"src/app/system_config" -I"src/app/system_config/pic32_mx" -I"../../../../../../microchip/xc32/v1.31/pic32-libs/peripheral" -I"src/app/app_tasks" -MMD -MF "${OBJECTDIR}/src/app/app_tasks/protocol.o.d" -o ${OBJECTDIR}/src/app/app_tasks/protocol.o src/app/app_tasks/protocol.c   
 	
 else
 ${OBJECTDIR}/src/app/app_tasks/program_planner.o: src/app/app_tasks/program_planner.c  nbproject/Makefile-${CND_CONF}.mk
@@ -242,6 +242,12 @@ ${OBJECTDIR}/src/app/app_tasks/stepper.o: src/app/app_tasks/stepper.c  nbproject
 	@${RM} ${OBJECTDIR}/src/app/app_tasks/stepper.o 
 	@${FIXDEPS} "${OBJECTDIR}/src/app/app_tasks/stepper.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"src" -I"src/app" -I"src/bsp" -I"src/bsp/cnc_rev_00" -I"src/app/system_config" -I"src/app/system_config/pic32_mx" -I"../../../../../../microchip/xc32/v1.31/pic32-libs/peripheral" -I"src/app/app_tasks" -MMD -MF "${OBJECTDIR}/src/app/app_tasks/stepper.o.d" -o ${OBJECTDIR}/src/app/app_tasks/stepper.o src/app/app_tasks/stepper.c   
 	
+${OBJECTDIR}/src/app/app_tasks/protocol.o: src/app/app_tasks/protocol.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} ${OBJECTDIR}/src/app/app_tasks 
+	@${RM} ${OBJECTDIR}/src/app/app_tasks/protocol.o.d 
+	@${RM} ${OBJECTDIR}/src/app/app_tasks/protocol.o 
+	@${FIXDEPS} "${OBJECTDIR}/src/app/app_tasks/protocol.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"src" -I"src/app" -I"src/bsp" -I"src/bsp/cnc_rev_00" -I"src/app/system_config" -I"src/app/system_config/pic32_mx" -I"../../../../../../microchip/xc32/v1.31/pic32-libs/peripheral" -I"src/app/app_tasks" -MMD -MF "${OBJECTDIR}/src/app/app_tasks/protocol.o.d" -o ${OBJECTDIR}/src/app/app_tasks/protocol.o src/app/app_tasks/protocol.c   
+	
 ${OBJECTDIR}/src/app/system_config/pic32_mx/system_init.o: src/app/system_config/pic32_mx/system_init.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} ${OBJECTDIR}/src/app/system_config/pic32_mx 
 	@${RM} ${OBJECTDIR}/src/app/system_config/pic32_mx/system_init.o.d 
@@ -277,12 +283,6 @@ ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o: src/bsp/cnc_rev_00/bsp_sys_init.
 	@${RM} ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o.d 
 	@${RM} ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o 
 	@${FIXDEPS} "${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"src" -I"src/app" -I"src/bsp" -I"src/bsp/cnc_rev_00" -I"src/app/system_config" -I"src/app/system_config/pic32_mx" -I"../../../../../../microchip/xc32/v1.31/pic32-libs/peripheral" -I"src/app/app_tasks" -MMD -MF "${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o.d" -o ${OBJECTDIR}/src/bsp/cnc_rev_00/bsp_sys_init.o src/bsp/cnc_rev_00/bsp_sys_init.c   
-	
-${OBJECTDIR}/src/app/app_tasks/protocol.o: src/app/app_tasks/protocol.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} ${OBJECTDIR}/src/app/app_tasks 
-	@${RM} ${OBJECTDIR}/src/app/app_tasks/protocol.o.d 
-	@${RM} ${OBJECTDIR}/src/app/app_tasks/protocol.o 
-	@${FIXDEPS} "${OBJECTDIR}/src/app/app_tasks/protocol.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION) -I"src" -I"src/app" -I"src/bsp" -I"src/bsp/cnc_rev_00" -I"src/app/system_config" -I"src/app/system_config/pic32_mx" -I"../../../../../../microchip/xc32/v1.31/pic32-libs/peripheral" -I"src/app/app_tasks" -MMD -MF "${OBJECTDIR}/src/app/app_tasks/protocol.o.d" -o ${OBJECTDIR}/src/app/app_tasks/protocol.o src/app/app_tasks/protocol.c   
 	
 endif
 
