@@ -656,8 +656,8 @@ void BSP_SetStepSize(uint8_t axis, StepSize_e stepSize)
             switch(stepSize)
             {
                 case 0:
-                    PORTClearBits(zAxis.mS1Pin.port, zAxis.mS1Pin.pin);
-                    PORTClearBits(zAxis.mS2Pin.port, zAxis.mS2Pin.pin);
+                    PORTSetBits(zAxis.mS1Pin.port, zAxis.mS1Pin.pin);
+                    PORTSetBits(zAxis.mS2Pin.port, zAxis.mS2Pin.pin);
                     break;
                 case 1:
                     PORTClearBits(zAxis.mS1Pin.port, zAxis.mS1Pin.pin);
@@ -668,8 +668,8 @@ void BSP_SetStepSize(uint8_t axis, StepSize_e stepSize)
                     PORTClearBits(zAxis.mS2Pin.port, zAxis.mS2Pin.pin);
                     break;
                 case 3:
-                    PORTSetBits(zAxis.mS1Pin.port, zAxis.mS1Pin.pin);
-                    PORTSetBits(zAxis.mS2Pin.port, zAxis.mS2Pin.pin);
+                    PORTClearBits(zAxis.mS1Pin.port, zAxis.mS1Pin.pin);
+                    PORTClearBits(zAxis.mS2Pin.port, zAxis.mS2Pin.pin);
                     break;
                 default:
                     break;

@@ -46,7 +46,7 @@ extern "C" {
 
 #define X_STEPS_MM(step_size)  (X_MOTOR_RES*step_size/(X_PULLEY_TEETH*X_BELT_PITCH))
 #define Y_STEPS_MM(step_size)  (Y_MOTOR_RES*step_size/(X_PULLEY_TEETH*X_BELT_PITCH))
-#define Z_STEPS_MM(step_size)  (Z_MOTOR_RES*step_size/LEAD_SCREW_RES)
+#define Z_STEPS_MM(step_size)  (step_size*(Z_MOTOR_RES/LEAD_SCREW_RES))
 
 #define HOME_X_POSITION 0
 #define HOME_Y_POSITION 0
